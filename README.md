@@ -16,7 +16,6 @@ A complete, production-ready Hybrid ELT Lakehouse architecture built natively on
 - [Technology Stack](#️-technology-stack)
 - [Project Structure](#-project-structure)
 - [How to Run](#-how-to-run)
-- [License](#-license)
 
 ## 🏗️ Technical Architecture Diagram
 
