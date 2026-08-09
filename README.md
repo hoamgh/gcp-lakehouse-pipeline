@@ -5,6 +5,7 @@
 ![Spark](<https://img.shields.io/badge/Processing-Apache%20Spark-E25A1C?logo=apachespark&logoColor=white>)
 ![dbt](https://img.shields.io/badge/Transform-dbt-FF694B?logo=dbt&logoColor=white)
 ![Delta Lake](<https://img.shields.io/badge/Table%20Format-Delta%20Lake-00ADD8>)
+
 A complete, production-ready Hybrid ELT Lakehouse architecture built natively on Google Cloud Platform (GCP). This repository demonstrates an enterprise-grade data engineering pipeline that processes streaming E-Commerce data using a **Multi-Layered Medallion Architecture (Bronze → Silver → Gold)**, featuring built-in Data Quality controls, Change Data Capture (CDC), and a Dead Letter Queue (DLQ) mechanism.
 
 ## 📑 Table of Contents
