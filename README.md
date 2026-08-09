@@ -184,7 +184,6 @@ The pipeline implements a **Zero-Overhead custom logging mechanism** in PySpark 
 
 ### 4. Data Warehouse & Transformation (BigQuery + dbt)
 
-*![1786246106430](image/README/1786246106430.png)![1786246206232](image/README/1786246206232.png)<kbd>📸 Screenshot idea: BigQuery UI showing the Gold layer tables, or the dbt Lineage Graph.</kbd>*
 
 <!-- ![BigQuery/dbt](docs/dbt_lineage.png) -->
 
