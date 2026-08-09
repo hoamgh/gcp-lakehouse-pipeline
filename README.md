@@ -172,20 +172,19 @@ To demonstrate the cloud-native capabilities of this pipeline, the system is ful
 ### 1. Centralized Logging & Metrics (Cloud Monitoring)
 
 The pipeline implements a **Zero-Overhead custom logging mechanism** in PySpark to track Data Quality (Bronze) and Processing Performance (Silver) in real-time.
+<!-- Add your Monitoring Dashboard and Cloud Logging screenshots below -->
 
 ### 2. Stream Processing (Dataflow)
 
-<!-- ![Monitoring Dashboard](docs/monitoring_dashboard.png) -->
+<!-- Add your Dataflow Topology screenshot below -->
 
-*![1786246510541](image/README/1786246510541.png)3. Serverless Spark Execution (Dataproc)*
+### 3. Serverless Spark Execution (Dataproc)
 
-
-<!-- ![Dataproc Batches](docs/dataproc_jobs.png) -->
+<!-- Add your Dataproc Batches screenshot below -->
 
 ### 4. Data Warehouse & Transformation (BigQuery + dbt)
 
-
-<!-- ![BigQuery/dbt](docs/dbt_lineage.png) -->
+<!-- Add your BigQuery/dbt screenshot below -->
 
 ---
 
