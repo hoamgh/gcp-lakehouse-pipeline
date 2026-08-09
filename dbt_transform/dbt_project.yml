@@ -1,0 +1,25 @@
+name: 'hybrid_elt_lakehouse'
+version: '1.0.0'
+config-version: 2
+
+profile: 'hybrid_elt_profile'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  hybrid_elt_lakehouse:
+    # Config for all models in the project
+    +materialized: table
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

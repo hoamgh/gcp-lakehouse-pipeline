@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: silver_layer
+    database: hybrid-elt-lakehouse-pipeline
+    schema: lakehouse_silver
+    tables:
+      - name: silver_customers
+      - name: silver_products
+      - name: silver_sellers
+      - name: silver_orders
+      - name: silver_order_items
+      - name: silver_payments
+      - name: silver_reviews
+      - name: silver_shipments
