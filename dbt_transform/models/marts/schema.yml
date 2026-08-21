@@ -76,3 +76,25 @@ models:
               arguments:
                 to: ref('fact_orders')
                 field: order_id
+
+  - name: dim_date
+    description: "Date dimension. Range is derived dynamically from the earliest order date to 5 years from today."
+    columns:
+      - name: date_id
+        description: "Surrogate key in YYYYMMDD integer format."
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "The calendar date."
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: month_number
+        tests:
+          - not_null
+      - name: day_of_month
+        tests:
+          - not_null
