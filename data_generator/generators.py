@@ -74,16 +74,13 @@ class IDRegistry:
 
     def get_updatable_shipments(self) -> list[tuple[str, str]]:
         """
-        Get shipments that can be updated (not yet 'delivered').
+        Get shipments that can be updated (not yet in a terminal state).
         Returns list of (shipment_id, current_status).
         """
-        status_choices = ["delivered", "shipped", "processing", "canceled", "pending", "TEST_STATUS"]
-        status_weights = [0, 0, 0, 0, 0, 100]  # 100% chance of dirty data
-
-        status = random.choices(status_choices, weights=status_weights)[0]
         return [
-            (sid, status) for sid, status in self._shipment_states.items()
-            if SHIPPING_STATUS_TRANSITION.get(status) is not None
+            (sid, current_status)
+            for sid, current_status in self._shipment_states.items()
+            if SHIPPING_STATUS_TRANSITION.get(current_status) is not None
         ]
 
     def update_shipment_status(self, shipment_id: str, new_status: str) -> None:
