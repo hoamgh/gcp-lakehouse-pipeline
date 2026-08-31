@@ -1,0 +1,24 @@
+[2026-08-31T11:02:38.478+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-08-31T11:02:38.492+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze manual__2026-08-31T10:52:48+00:00 [queued]>
+[2026-08-31T11:02:38.499+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze manual__2026-08-31T10:52:48+00:00 [queued]>
+[2026-08-31T11:02:38.499+0000] {taskinstance.py:2306} INFO - Starting attempt 1 of 2
+[2026-08-31T11:02:38.510+0000] {taskinstance.py:2330} INFO - Executing <Task(DataprocCreateBatchOperator): run_raw_to_bronze> on 2026-08-31 10:52:48+00:00
+[2026-08-31T11:02:38.518+0000] {standard_task_runner.py:90} INFO - Running: ['***', 'tasks', 'run', 'hybrid_lakehouse_daily_pipeline', 'run_raw_to_bronze', 'manual__2026-08-31T10:52:48+00:00', '--job-id', '54', '--raw', '--subdir', 'DAGS_FOLDER/lakehouse_pipeline.py', '--cfg-path', '/tmp/tmpndwtp9j6']
+[2026-08-31T11:02:38.521+0000] {standard_task_runner.py:91} INFO - Job 54: Subtask run_raw_to_bronze
+[2026-08-31T11:02:38.522+0000] {logging_mixin.py:188} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:62 DeprecationWarning: This process (pid=855) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-08-31T11:02:38.523+0000] {standard_task_runner.py:64} INFO - Started process 856 to run task
+[2026-08-31T11:02:38.573+0000] {task_command.py:426} INFO - Running <TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze manual__2026-08-31T10:52:48+00:00 [running]> on host 905eac4f6c1d
+[2026-08-31T11:02:38.648+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='data_engineer' AIRFLOW_CTX_DAG_ID='hybrid_lakehouse_daily_pipeline' AIRFLOW_CTX_TASK_ID='run_raw_to_bronze' AIRFLOW_CTX_EXECUTION_DATE='2026-08-31T10:52:48+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-08-31T10:52:48+00:00'
+[2026-08-31T11:02:38.650+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-08-31T11:02:38.664+0000] {crypto.py:82} WARNING - empty cryptography key - values will not be stored encrypted.
+[2026-08-31T11:02:38.665+0000] {connection.py:274} WARNING - Connection schemes (type: google_cloud_platform) shall not contain '_' according to RFC3986.
+[2026-08-31T11:02:38.666+0000] {base.py:84} INFO - Using connection ID 'google_cloud_default' for task execution.
+[2026-08-31T11:02:38.667+0000] {dataproc.py:3030} INFO - Creating batch raw-to-bronze-c3f862d5
+[2026-08-31T11:02:38.668+0000] {dataproc.py:3031} INFO - Once started, the batch job will be available at https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-c3f862d5/monitoring?project=hybrid-elt-lakehouse-pipeline
+[2026-08-31T11:07:28.649+0000] {dataproc.py:3055} INFO - Batch raw-to-bronze-c3f862d5 created
+[2026-08-31T11:07:28.650+0000] {dataproc.py:3155} INFO - Batch job raw-to-bronze-c3f862d5 completed. Driver logs: https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-c3f862d5/monitoring?project=hybrid-elt-lakehouse-pipeline
+[2026-08-31T11:07:28.669+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-08-31T11:07:28.690+0000] {taskinstance.py:1206} INFO - Marking task as SUCCESS. dag_id=hybrid_lakehouse_daily_pipeline, task_id=run_raw_to_bronze, run_id=manual__2026-08-31T10:52:48+00:00, execution_date=20260831T105248, start_date=20260831T110238, end_date=20260831T110728
+[2026-08-31T11:07:28.713+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 0
+[2026-08-31T11:07:28.734+0000] {taskinstance.py:3503} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-08-31T11:07:28.737+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

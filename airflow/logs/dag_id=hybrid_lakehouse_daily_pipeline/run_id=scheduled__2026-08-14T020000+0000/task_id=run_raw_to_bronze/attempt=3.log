@@ -1,0 +1,74 @@
+[2026-08-15T17:31:14.037+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-08-15T17:31:14.076+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze scheduled__2026-08-14T02:00:00+00:00 [queued]>
+[2026-08-15T17:31:14.091+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze scheduled__2026-08-14T02:00:00+00:00 [queued]>
+[2026-08-15T17:31:14.093+0000] {taskinstance.py:2306} INFO - Starting attempt 3 of 2
+[2026-08-15T17:31:14.118+0000] {taskinstance.py:2330} INFO - Executing <Task(DataprocCreateBatchOperator): run_raw_to_bronze> on 2026-08-14 02:00:00+00:00
+[2026-08-15T17:31:14.140+0000] {standard_task_runner.py:90} INFO - Running: ['***', 'tasks', 'run', 'hybrid_lakehouse_daily_pipeline', 'run_raw_to_bronze', 'scheduled__2026-08-14T02:00:00+00:00', '--job-id', '11', '--raw', '--subdir', 'DAGS_FOLDER/lakehouse_pipeline.py', '--cfg-path', '/tmp/tmpeecavw71']
+[2026-08-15T17:31:14.161+0000] {standard_task_runner.py:91} INFO - Job 11: Subtask run_raw_to_bronze
+[2026-08-15T17:31:14.161+0000] {logging_mixin.py:188} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:62 DeprecationWarning: This process (pid=173) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-08-15T17:31:14.165+0000] {standard_task_runner.py:64} INFO - Started process 180 to run task
+[2026-08-15T17:31:14.371+0000] {task_command.py:426} INFO - Running <TaskInstance: hybrid_lakehouse_daily_pipeline.run_raw_to_bronze scheduled__2026-08-14T02:00:00+00:00 [running]> on host 905eac4f6c1d
+[2026-08-15T17:31:14.661+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='data_engineer' AIRFLOW_CTX_DAG_ID='hybrid_lakehouse_daily_pipeline' AIRFLOW_CTX_TASK_ID='run_raw_to_bronze' AIRFLOW_CTX_EXECUTION_DATE='2026-08-14T02:00:00+00:00' AIRFLOW_CTX_TRY_NUMBER='3' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2026-08-14T02:00:00+00:00'
+[2026-08-15T17:31:14.664+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-08-15T17:31:14.702+0000] {crypto.py:82} WARNING - empty cryptography key - values will not be stored encrypted.
+[2026-08-15T17:31:14.704+0000] {connection.py:274} WARNING - Connection schemes (type: google_cloud_platform) shall not contain '_' according to RFC3986.
+[2026-08-15T17:31:14.706+0000] {base.py:84} INFO - Using connection ID 'google_cloud_default' for task execution.
+[2026-08-15T17:31:14.708+0000] {dataproc.py:3030} INFO - Creating batch raw-to-bronze-12566282
+[2026-08-15T17:31:14.709+0000] {dataproc.py:3031} INFO - Once started, the batch job will be available at https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282/monitoring?project=hybrid-elt-lakehouse-pipeline
+[2026-08-15T17:36:34.014+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-08-15T17:36:34.031+0000] {taskinstance.py:2905} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/providers/google/cloud/hooks/dataproc.py", line 281, in wait_for_operation
+    return operation.result(timeout=timeout, retry=result_retry)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/google/api_core/future/polling.py", line 260, in result
+    raise self._exception
+google.api_core.exceptions.Aborted: 409 Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.* 10: Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.*
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py", line 465, in _execute_task
+    result = _execute_callable(context=context, **execute_callable_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py", line 432, in _execute_callable
+    return execute_callable(context=context, **execute_callable_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/baseoperator.py", line 401, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/providers/google/cloud/operators/dataproc.py", line 3052, in execute
+    result = hook.wait_for_operation(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/providers/google/cloud/hooks/dataproc.py", line 284, in wait_for_operation
+    raise AirflowException(error)
+airflow.exceptions.AirflowException: 409 Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.* 10: Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.*
+[2026-08-15T17:36:34.041+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=hybrid_lakehouse_daily_pipeline, task_id=run_raw_to_bronze, run_id=scheduled__2026-08-14T02:00:00+00:00, execution_date=20260814T020000, start_date=20260815T173114, end_date=20260815T173634
+[2026-08-15T17:36:34.062+0000] {standard_task_runner.py:110} ERROR - Failed to execute job 11 for task run_raw_to_bronze (409 Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.* 10: Google Cloud Dataproc Agent reports job failure. If logs are available, they can be found at:
+https://console.cloud.google.com/dataproc/batches/asia-southeast1/raw-to-bronze-12566282?project=hybrid-elt-lakehouse-pipeline
+gcloud dataproc batches wait 'raw-to-bronze-12566282' --region 'asia-southeast1' --project 'hybrid-elt-lakehouse-pipeline'
+https://console.cloud.google.com/storage/browser/dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/
+gs://dataproc-staging-asia-southeast1-863536426474-i05mzuur/google-cloud-dataproc-metainfo/88d69d9d-def9-4854-8dc2-60ceb339afd3/jobs/srvls-batch-c910a363-1093-4b67-8fd8-af275e580989/driveroutput.*; 180)
+[2026-08-15T17:36:34.117+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 1
+[2026-08-15T17:36:34.186+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-08-15T17:36:34.201+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

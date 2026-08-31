@@ -3,3 +3,4 @@ delta-spark==3.2.1
 
 apache-beam[gcp]==2.56.0
 google-cloud-logging==3.11.0
+google-cloud-firestore==2.14.0

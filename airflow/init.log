@@ -1,0 +1,92 @@
+airflow-init-1  | 
+airflow-init-1  | DB: postgresql+psycopg2://airflow:***@postgres/airflow
+airflow-init-1  | Performing upgrade to the metadata database postgresql+psycopg2://airflow:***@postgres/airflow
+airflow-init-1  | Traceback (most recent call last):
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/sql/base.py", line 1223, in __getattr__
+airflow-init-1  |     return self._index[key]
+airflow-init-1  |            ~~~~~~~~~~~^^^^^
+airflow-init-1  | KeyError: 'execution_date'
+airflow-init-1  | 
+airflow-init-1  | The above exception was the direct cause of the following exception:
+airflow-init-1  | 
+airflow-init-1  | Traceback (most recent call last):
+airflow-init-1  |   File "/home/airflow/.local/bin/airflow", line 8, in <module>
+airflow-init-1  |     sys.exit(main())
+airflow-init-1  |              ^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/__main__.py", line 58, in main
+airflow-init-1  |     args.func(args)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/cli/cli_config.py", line 49, in command
+airflow-init-1  |     return func(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/cli.py", line 114, in wrapper
+airflow-init-1  |     return f(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/providers_configuration_loader.py", line 55, in wrapped_function
+airflow-init-1  |     return func(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/cli/commands/db_command.py", line 130, in migratedb
+airflow-init-1  |     db.upgradedb(
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/session.py", line 79, in wrapper
+airflow-init-1  |     return func(*args, session=session, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1608, in upgradedb
+airflow-init-1  |     for err in _check_migration_errors(session=session):
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1492, in _check_migration_errors
+airflow-init-1  |     yield from check_fn(session=session)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1169, in check_run_id_null
+airflow-init-1  |     dagrun_table.c.execution_date.is_(None),
+airflow-init-1  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/sql/base.py", line 1225, in __getattr__
+airflow-init-1  |     util.raise_(AttributeError(key), replace_context=err)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/util/compat.py", line 211, in raise_
+airflow-init-1  |     raise exception
+airflow-init-1  | AttributeError: execution_date
+airflow-init-1  | WARNING: Environment variable '_AIRFLOW_DB_UPGRADE' is deprecated please use '_AIRFLOW_DB_MIGRATE' instead
+airflow-init-1  | ERROR: You need to upgrade the database. Please run `airflow db upgrade`. Make sure the command is run using Airflow version 2.9.3.
+airflow-init-1  | 2.9.3
+airflow-init-1  | 
+airflow-init-1  | Traceback (most recent call last):
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/sql/base.py", line 1223, in __getattr__
+airflow-init-1  | DB: postgresql+psycopg2://airflow:***@postgres/airflow
+airflow-init-1  | Performing upgrade to the metadata database postgresql+psycopg2://airflow:***@postgres/airflow
+airflow-init-1  |     return self._index[key]
+airflow-init-1  |            ~~~~~~~~~~~^^^^^
+airflow-init-1  | KeyError: 'execution_date'
+airflow-init-1  | 
+airflow-init-1  | The above exception was the direct cause of the following exception:
+airflow-init-1  | 
+airflow-init-1  | Traceback (most recent call last):
+airflow-init-1  |   File "/home/airflow/.local/bin/airflow", line 8, in <module>
+airflow-init-1  |     sys.exit(main())
+airflow-init-1  |              ^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/__main__.py", line 58, in main
+airflow-init-1  |     args.func(args)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/cli/cli_config.py", line 49, in command
+airflow-init-1  |     return func(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/cli.py", line 114, in wrapper
+airflow-init-1  |     return f(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/providers_configuration_loader.py", line 55, in wrapped_function
+airflow-init-1  |     return func(*args, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/cli/commands/db_command.py", line 130, in migratedb
+airflow-init-1  |     db.upgradedb(
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/session.py", line 79, in wrapper
+airflow-init-1  |     return func(*args, session=session, **kwargs)
+airflow-init-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1608, in upgradedb
+airflow-init-1  |     for err in _check_migration_errors(session=session):
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1492, in _check_migration_errors
+airflow-init-1  |     yield from check_fn(session=session)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/airflow/utils/db.py", line 1169, in check_run_id_null
+airflow-init-1  |     dagrun_table.c.execution_date.is_(None),
+airflow-init-1  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/sql/base.py", line 1225, in __getattr__
+airflow-init-1  |     util.raise_(AttributeError(key), replace_context=err)
+airflow-init-1  |   File "/home/airflow/.local/lib/python3.12/site-packages/sqlalchemy/util/compat.py", line 211, in raise_
+airflow-init-1  |     raise exception
+airflow-init-1  | AttributeError: execution_date
+airflow-init-1  | WARNING: Environment variable '_AIRFLOW_DB_UPGRADE' is deprecated please use '_AIRFLOW_DB_MIGRATE' instead
+airflow-init-1  | ERROR: You need to upgrade the database. Please run `airflow db upgrade`. Make sure the command is run using Airflow version 2.9.3.
+airflow-init-1  | 2.9.3

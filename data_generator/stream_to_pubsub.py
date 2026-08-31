@@ -9,7 +9,9 @@ import os
 from datetime import datetime
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
-
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "spark_jobs"))
+from logger import log_ingestion
 # Import from existing generators
 from generators import (
     IDRegistry, generate_customers, generate_products, generate_sellers,
@@ -32,10 +34,6 @@ def default_json_serializer(obj):
 def get_publisher():
     creds = service_account.Credentials.from_service_account_file(CREDENTIALS_PATH)
     return pubsub_v1.PublisherClient(credentials=creds)
-
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "spark_jobs"))
-from logger import log_ingestion
 
 def publish_records(publisher, topic_path, entity_name, records):
     for record in records:

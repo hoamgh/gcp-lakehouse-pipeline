@@ -1,3 +1,5 @@
+![1786724604507](image/ARCHITECTURE/1786724604507.png)h
+
 # Hybrid ELT Lakehouse Pipeline — Architecture (GCP)
 
 ### 1. Ingestion Layer (Pub/Sub & Apache Beam / Dataflow)

@@ -25,6 +25,14 @@ SUBSCRIPTION_PATH = f"projects/{PROJECT_ID}/subscriptions/{SUBSCRIPTION_ID}"
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CREDENTIALS_PATH
 
+# ---------------------------------------------------------------------------
+# Pipeline constants
+# ---------------------------------------------------------------------------
+WINDOW_SECONDS = 30
+FIRESTORE_COLLECTION = "realtime_dashboard"
+LIVE_METRICS_DOC = "live_metrics"
+DAILY_TOTALS_PREFIX = "daily_totals"
+
 class ParseEventsFn(beam.DoFn):
     """
     Parses each Pub/Sub message and emits aggregation tuples.
@@ -81,7 +89,7 @@ class WriteToFirestoreFn(beam.DoFn):
         try:
             # --- Document 1: live_metrics (overwrite every 30s) ---
             # Shows velocity: what happened in the LAST 30 seconds
-            live_ref = self.db.collection("realtime_dashboard").document("live_metrics")
+            live_ref = self.db.collection(FIRESTORE_COLLECTION).document(LIVE_METRICS_DOC)
             live_ref.set({
                 "orders_in_window": order_count,
                 "revenue_in_window": round(total_revenue, 2),
@@ -92,7 +100,7 @@ class WriteToFirestoreFn(beam.DoFn):
 
             # --- Document 2: daily_totals (atomic increment) ---
             # Shows running totals accumulated since the pipeline started today
-            daily_ref = self.db.collection("realtime_dashboard").document(f"daily_totals_{today}")
+            daily_ref = self.db.collection(FIRESTORE_COLLECTION).document(f"{DAILY_TOTALS_PREFIX}_{today}")
             daily_ref.set({
                 "date": today,
                 "total_orders": transforms.Increment(order_count),
@@ -123,7 +131,7 @@ def run():
             p
             | "Read from Pub/Sub" >> beam.io.ReadFromPubSub(subscription=SUBSCRIPTION_PATH)
             | "Parse Events" >> beam.ParDo(ParseEventsFn())
-            | "Window 30s" >> beam.WindowInto(window.FixedWindows(30))
+            | f"Window {WINDOW_SECONDS}s" >> beam.WindowInto(window.FixedWindows(WINDOW_SECONDS))
             | "Sum Revenue & Count" >> beam.CombinePerKey(
                 lambda values: (
                     sum(v[0] for v in values),

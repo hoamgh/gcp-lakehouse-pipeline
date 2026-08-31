@@ -1,0 +1,152 @@
+[2026-08-15T17:59:52.114+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-08-15T17:59:52.143+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_dbt_gold manual__2026-08-15T17:44:39.761816+00:00 [queued]>
+[2026-08-15T17:59:52.162+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: hybrid_lakehouse_daily_pipeline.run_dbt_gold manual__2026-08-15T17:44:39.761816+00:00 [queued]>
+[2026-08-15T17:59:52.164+0000] {taskinstance.py:2306} INFO - Starting attempt 2 of 2
+[2026-08-15T17:59:52.192+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): run_dbt_gold> on 2026-08-15 17:44:39.761816+00:00
+[2026-08-15T17:59:52.211+0000] {standard_task_runner.py:90} INFO - Running: ['***', 'tasks', 'run', 'hybrid_lakehouse_daily_pipeline', 'run_dbt_gold', 'manual__2026-08-15T17:44:39.761816+00:00', '--job-id', '15', '--raw', '--subdir', 'DAGS_FOLDER/lakehouse_pipeline.py', '--cfg-path', '/tmp/tmp5_d9nzw1']
+[2026-08-15T17:59:52.216+0000] {logging_mixin.py:188} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:62 DeprecationWarning: This process (pid=1078) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-08-15T17:59:52.218+0000] {standard_task_runner.py:91} INFO - Job 15: Subtask run_dbt_gold
+[2026-08-15T17:59:52.219+0000] {standard_task_runner.py:64} INFO - Started process 1079 to run task
+[2026-08-15T17:59:52.351+0000] {task_command.py:426} INFO - Running <TaskInstance: hybrid_lakehouse_daily_pipeline.run_dbt_gold manual__2026-08-15T17:44:39.761816+00:00 [running]> on host 905eac4f6c1d
+[2026-08-15T17:59:52.502+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='data_engineer' AIRFLOW_CTX_DAG_ID='hybrid_lakehouse_daily_pipeline' AIRFLOW_CTX_TASK_ID='run_dbt_gold' AIRFLOW_CTX_EXECUTION_DATE='2026-08-15T17:44:39.761816+00:00' AIRFLOW_CTX_TRY_NUMBER='2' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-08-15T17:44:39.761816+00:00'
+[2026-08-15T17:59:52.505+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-08-15T17:59:52.525+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-08-15T17:59:52.527+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/***/dbt_transform && dbt build --profiles-dir .']
+[2026-08-15T17:59:52.558+0000] {subprocess.py:86} INFO - Output:
+[2026-08-15T17:59:56.705+0000] {subprocess.py:93} INFO - [0m17:59:56  Running with dbt=1.12.2
+[2026-08-15T17:59:58.258+0000] {subprocess.py:93} INFO - [0m17:59:58  Registered adapter: bigquery=1.12.0
+[2026-08-15T17:59:59.460+0000] {subprocess.py:93} INFO - [0m17:59:59  Found 15 models, 27 data tests, 8 sources, 561 macros
+[2026-08-15T17:59:59.469+0000] {subprocess.py:93} INFO - [0m17:59:59
+[2026-08-15T17:59:59.472+0000] {subprocess.py:93} INFO - [0m17:59:59  Concurrency: 4 threads (target='dev')
+[2026-08-15T17:59:59.477+0000] {subprocess.py:93} INFO - [0m17:59:59
+[2026-08-15T18:00:01.599+0000] {subprocess.py:93} INFO - [0m18:00:01  1 of 42 START sql table model lakehouse_gold.dim_date .......................... [RUN]
+[2026-08-15T18:00:01.602+0000] {subprocess.py:93} INFO - [0m18:00:01  2 of 42 START sql view model lakehouse_gold.stg_customers ...................... [RUN]
+[2026-08-15T18:00:01.605+0000] {subprocess.py:93} INFO - [0m18:00:01  3 of 42 START sql view model lakehouse_gold.stg_order_items .................... [RUN]
+[2026-08-15T18:00:01.608+0000] {subprocess.py:93} INFO - [0m18:00:01  4 of 42 START sql view model lakehouse_gold.stg_orders ......................... [RUN]
+[2026-08-15T18:00:03.998+0000] {subprocess.py:93} INFO - [0m18:00:03  4 of 42 OK created sql view model lakehouse_gold.stg_orders .................... [[32mCREATE VIEW (0 processed)[0m in 2.37s]
+[2026-08-15T18:00:04.018+0000] {subprocess.py:93} INFO - [0m18:00:04  2 of 42 OK created sql view model lakehouse_gold.stg_customers ................. [[32mCREATE VIEW (0 processed)[0m in 2.40s]
+[2026-08-15T18:00:04.021+0000] {subprocess.py:93} INFO - [0m18:00:04  5 of 42 START sql view model lakehouse_gold.stg_payments ....................... [RUN]
+[2026-08-15T18:00:04.038+0000] {subprocess.py:93} INFO - [0m18:00:04  6 of 42 START sql view model lakehouse_gold.stg_products ....................... [RUN]
+[2026-08-15T18:00:04.206+0000] {subprocess.py:93} INFO - [0m18:00:04  3 of 42 OK created sql view model lakehouse_gold.stg_order_items ............... [[32mCREATE VIEW (0 processed)[0m in 2.59s]
+[2026-08-15T18:00:04.215+0000] {subprocess.py:93} INFO - [0m18:00:04  7 of 42 START sql view model lakehouse_gold.stg_reviews ........................ [RUN]
+[2026-08-15T18:00:04.682+0000] {subprocess.py:93} INFO - [0m18:00:04  1 of 42 OK created sql table model lakehouse_gold.dim_date ..................... [[32mCREATE TABLE (1.6k rows, 0 processed)[0m in 3.07s]
+[2026-08-15T18:00:04.690+0000] {subprocess.py:93} INFO - [0m18:00:04  8 of 42 START sql view model lakehouse_gold.stg_sellers ........................ [RUN]
+[2026-08-15T18:00:05.903+0000] {subprocess.py:93} INFO - [0m18:00:05  6 of 42 OK created sql view model lakehouse_gold.stg_products .................. [[32mCREATE VIEW (0 processed)[0m in 1.85s]
+[2026-08-15T18:00:05.920+0000] {subprocess.py:93} INFO - [0m18:00:05  9 of 42 START sql view model lakehouse_gold.stg_shipments ...................... [RUN]
+[2026-08-15T18:00:06.325+0000] {subprocess.py:93} INFO - [0m18:00:06  5 of 42 OK created sql view model lakehouse_gold.stg_payments .................. [[32mCREATE VIEW (0 processed)[0m in 2.29s]
+[2026-08-15T18:00:06.336+0000] {subprocess.py:93} INFO - [0m18:00:06  10 of 42 START sql table model lakehouse_gold.dim_customers .................... [RUN]
+[2026-08-15T18:00:06.422+0000] {subprocess.py:93} INFO - [0m18:00:06  7 of 42 OK created sql view model lakehouse_gold.stg_reviews ................... [[32mCREATE VIEW (0 processed)[0m in 2.20s]
+[2026-08-15T18:00:06.432+0000] {subprocess.py:93} INFO - [0m18:00:06  11 of 42 START test not_null_dim_date_date_id .................................. [RUN]
+[2026-08-15T18:00:06.659+0000] {subprocess.py:93} INFO - [0m18:00:06  8 of 42 OK created sql view model lakehouse_gold.stg_sellers ................... [[32mCREATE VIEW (0 processed)[0m in 1.96s]
+[2026-08-15T18:00:06.667+0000] {subprocess.py:93} INFO - [0m18:00:06  12 of 42 START test not_null_dim_date_day_of_month ............................. [RUN]
+[2026-08-15T18:00:08.030+0000] {subprocess.py:93} INFO - [0m18:00:08  9 of 42 OK created sql view model lakehouse_gold.stg_shipments ................. [[32mCREATE VIEW (0 processed)[0m in 2.10s]
+[2026-08-15T18:00:08.041+0000] {subprocess.py:93} INFO - [0m18:00:08  13 of 42 START test not_null_dim_date_full_date ................................ [RUN]
+[2026-08-15T18:00:08.096+0000] {subprocess.py:93} INFO - [0m18:00:08  11 of 42 PASS not_null_dim_date_date_id ........................................ [[32mPASS[0m in 1.66s]
+[2026-08-15T18:00:08.117+0000] {subprocess.py:93} INFO - [0m18:00:08  14 of 42 START test not_null_dim_date_month_number ............................. [RUN]
+[2026-08-15T18:00:08.339+0000] {subprocess.py:93} INFO - [0m18:00:08  12 of 42 PASS not_null_dim_date_day_of_month ................................... [[32mPASS[0m in 1.67s]
+[2026-08-15T18:00:08.349+0000] {subprocess.py:93} INFO - [0m18:00:08  15 of 42 START test not_null_dim_date_year ..................................... [RUN]
+[2026-08-15T18:00:09.786+0000] {subprocess.py:93} INFO - [0m18:00:09  14 of 42 PASS not_null_dim_date_month_number ................................... [[32mPASS[0m in 1.66s]
+[2026-08-15T18:00:09.795+0000] {subprocess.py:93} INFO - [0m18:00:09  16 of 42 START test unique_dim_date_date_id .................................... [RUN]
+[2026-08-15T18:00:10.178+0000] {subprocess.py:93} INFO - [0m18:00:10  15 of 42 PASS not_null_dim_date_year ........................................... [[32mPASS[0m in 1.82s]
+[2026-08-15T18:00:10.199+0000] {subprocess.py:93} INFO - [0m18:00:10  13 of 42 PASS not_null_dim_date_full_date ...................................... [[32mPASS[0m in 2.15s]
+[2026-08-15T18:00:10.212+0000] {subprocess.py:93} INFO - [0m18:00:10  17 of 42 START sql incremental model lakehouse_gold.dim_products ............... [RUN]
+[2026-08-15T18:00:10.226+0000] {subprocess.py:93} INFO - [0m18:00:10  18 of 42 START sql table model lakehouse_gold.fact_orders ...................... [RUN]
+[2026-08-15T18:00:10.309+0000] {subprocess.py:93} INFO - [0m18:00:10  10 of 42 OK created sql table model lakehouse_gold.dim_customers ............... [[32mCREATE TABLE (20.5k rows, 1.1 MiB processed)[0m in 3.95s]
+[2026-08-15T18:00:10.355+0000] {subprocess.py:93} INFO - [0m18:00:10  19 of 42 START sql table model lakehouse_gold.fact_order_items ................. [RUN]
+[2026-08-15T18:00:11.607+0000] {subprocess.py:93} INFO - [0m18:00:11  16 of 42 PASS unique_dim_date_date_id .......................................... [[32mPASS[0m in 1.80s]
+[2026-08-15T18:00:11.624+0000] {subprocess.py:93} INFO - [0m18:00:11  20 of 42 START sql table model lakehouse_gold.dim_sellers ...................... [RUN]
+[2026-08-15T18:00:15.375+0000] {subprocess.py:93} INFO - [0m18:00:15  17 of 42 OK created sql incremental model lakehouse_gold.dim_products .......... [[32mMERGE (17.1k rows, 8.2 MiB processed)[0m in 5.15s]
+[2026-08-15T18:00:15.386+0000] {subprocess.py:93} INFO - [0m18:00:15  21 of 42 START sql incremental model lakehouse_gold.fact_shipments ............. [RUN]
+[2026-08-15T18:00:15.447+0000] {subprocess.py:93} INFO - [0m18:00:15  20 of 42 OK created sql table model lakehouse_gold.dim_sellers ................. [[32mCREATE TABLE (6.7k rows, 582.2 KiB processed)[0m in 3.81s]
+[2026-08-15T18:00:15.455+0000] {subprocess.py:93} INFO - [0m18:00:15  22 of 42 START test not_null_dim_customers_customer_id ......................... [RUN]
+[2026-08-15T18:00:15.553+0000] {subprocess.py:93} INFO - [0m18:00:15  19 of 42 OK created sql table model lakehouse_gold.fact_order_items ............ [[32mCREATE TABLE (91.4k rows, 13.1 MiB processed)[0m in 5.14s]
+[2026-08-15T18:00:15.562+0000] {subprocess.py:93} INFO - [0m18:00:15  23 of 42 START test unique_dim_customers_customer_id ........................... [RUN]
+[2026-08-15T18:00:15.827+0000] {subprocess.py:93} INFO - [0m18:00:15  18 of 42 OK created sql table model lakehouse_gold.fact_orders ................. [[32mCREATE TABLE (62.9k rows, 14.1 MiB processed)[0m in 5.59s]
+[2026-08-15T18:00:15.837+0000] {subprocess.py:93} INFO - [0m18:00:15  24 of 42 START test not_null_dim_products_product_id ........................... [RUN]
+[2026-08-15T18:00:17.026+0000] {subprocess.py:93} INFO - [0m18:00:17  22 of 42 PASS not_null_dim_customers_customer_id ............................... [[32mPASS[0m in 1.56s]
+[2026-08-15T18:00:17.044+0000] {subprocess.py:93} INFO - [0m18:00:17  25 of 42 START test unique_dim_products_product_id ............................. [RUN]
+[2026-08-15T18:00:17.407+0000] {subprocess.py:93} INFO - [0m18:00:17  23 of 42 PASS unique_dim_customers_customer_id ................................. [[32mPASS[0m in 1.84s]
+[2026-08-15T18:00:17.425+0000] {subprocess.py:93} INFO - [0m18:00:17  26 of 42 START test not_null_dim_sellers_seller_id ............................. [RUN]
+[2026-08-15T18:00:17.546+0000] {subprocess.py:93} INFO - [0m18:00:17  24 of 42 PASS not_null_dim_products_product_id ................................. [[32mPASS[0m in 1.70s]
+[2026-08-15T18:00:17.558+0000] {subprocess.py:93} INFO - [0m18:00:17  27 of 42 START test unique_dim_sellers_seller_id ............................... [RUN]
+[2026-08-15T18:00:18.763+0000] {subprocess.py:93} INFO - [0m18:00:18  25 of 42 PASS unique_dim_products_product_id ................................... [[32mPASS[0m in 1.71s]
+[2026-08-15T18:00:18.777+0000] {subprocess.py:93} INFO - [0m18:00:18  28 of 42 START test not_null_fact_order_items_order_id ......................... [RUN]
+[2026-08-15T18:00:19.077+0000] {subprocess.py:93} INFO - [0m18:00:19  26 of 42 PASS not_null_dim_sellers_seller_id ................................... [[32mPASS[0m in 1.65s]
+[2026-08-15T18:00:19.089+0000] {subprocess.py:93} INFO - [0m18:00:19  29 of 42 START test not_null_fact_order_items_order_item_sk .................... [RUN]
+[2026-08-15T18:00:19.588+0000] {subprocess.py:93} INFO - [0m18:00:19  21 of 42 OK created sql incremental model lakehouse_gold.fact_shipments ........ [[32mMERGE (0.0 rows, 2.4 MiB processed)[0m in 4.19s]
+[2026-08-15T18:00:19.602+0000] {subprocess.py:93} INFO - [0m18:00:19  30 of 42 START test not_null_fact_order_items_product_id ....................... [RUN]
+[2026-08-15T18:00:20.375+0000] {subprocess.py:93} INFO - [0m18:00:20  27 of 42 PASS unique_dim_sellers_seller_id ..................................... [[32mPASS[0m in 2.81s]
+[2026-08-15T18:00:20.402+0000] {subprocess.py:93} INFO - [0m18:00:20  31 of 42 START test not_null_fact_order_items_seller_id ........................ [RUN]
+[2026-08-15T18:00:20.707+0000] {subprocess.py:93} INFO - [0m18:00:20  29 of 42 PASS not_null_fact_order_items_order_item_sk .......................... [[32mPASS[0m in 1.61s]
+[2026-08-15T18:00:20.724+0000] {subprocess.py:93} INFO - [0m18:00:20  32 of 42 START test relationships_fact_order_items_product_id__product_id__ref_dim_products_  [RUN]
+[2026-08-15T18:00:21.133+0000] {subprocess.py:93} INFO - [0m18:00:21  28 of 42 PASS not_null_fact_order_items_order_id ............................... [[32mPASS[0m in 2.35s]
+[2026-08-15T18:00:21.152+0000] {subprocess.py:93} INFO - [0m18:00:21  33 of 42 START test relationships_fact_order_items_seller_id__seller_id__ref_dim_sellers_  [RUN]
+[2026-08-15T18:00:21.303+0000] {subprocess.py:93} INFO - [0m18:00:21  30 of 42 PASS not_null_fact_order_items_product_id ............................. [[32mPASS[0m in 1.70s]
+[2026-08-15T18:00:21.313+0000] {subprocess.py:93} INFO - [0m18:00:21  34 of 42 START test unique_fact_order_items_order_item_sk ...................... [RUN]
+[2026-08-15T18:00:22.259+0000] {subprocess.py:93} INFO - [0m18:00:22  32 of 42 PASS relationships_fact_order_items_product_id__product_id__ref_dim_products_  [[32mPASS[0m in 1.53s]
+[2026-08-15T18:00:22.269+0000] {subprocess.py:93} INFO - [0m18:00:22  31 of 42 PASS not_null_fact_order_items_seller_id .............................. [[32mPASS[0m in 1.86s]
+[2026-08-15T18:00:22.282+0000] {subprocess.py:93} INFO - [0m18:00:22  35 of 42 START test not_null_fact_orders_customer_id ........................... [RUN]
+[2026-08-15T18:00:22.292+0000] {subprocess.py:93} INFO - [0m18:00:22  36 of 42 START test not_null_fact_orders_order_id .............................. [RUN]
+[2026-08-15T18:00:22.729+0000] {subprocess.py:93} INFO - [0m18:00:22  33 of 42 FAIL 13597 relationships_fact_order_items_seller_id__seller_id__ref_dim_sellers_  [[31mFAIL 13597[0m in 1.57s]
+[2026-08-15T18:00:22.746+0000] {subprocess.py:93} INFO - [0m18:00:22  37 of 42 START test relationships_fact_order_items_order_id__order_id__ref_fact_orders_  [RUN]
+[2026-08-15T18:00:22.956+0000] {subprocess.py:93} INFO - [0m18:00:22  34 of 42 PASS unique_fact_order_items_order_item_sk ............................ [[32mPASS[0m in 1.64s]
+[2026-08-15T18:00:22.977+0000] {subprocess.py:93} INFO - [0m18:00:22  38 of 42 START test relationships_fact_orders_customer_id__customer_id__ref_dim_customers_  [RUN]
+[2026-08-15T18:00:23.896+0000] {subprocess.py:93} INFO - [0m18:00:23  36 of 42 PASS not_null_fact_orders_order_id .................................... [[32mPASS[0m in 1.59s]
+[2026-08-15T18:00:23.905+0000] {subprocess.py:93} INFO - [0m18:00:23  39 of 42 START test unique_fact_orders_order_id ................................ [RUN]
+[2026-08-15T18:00:24.120+0000] {subprocess.py:93} INFO - [0m18:00:24  35 of 42 PASS not_null_fact_orders_customer_id ................................. [[32mPASS[0m in 1.83s]
+[2026-08-15T18:00:24.131+0000] {subprocess.py:93} INFO - [0m18:00:24  40 of 42 START test not_null_fact_shipments_shipment_id ........................ [RUN]
+[2026-08-15T18:00:24.605+0000] {subprocess.py:93} INFO - [0m18:00:24  38 of 42 FAIL 9556 relationships_fact_orders_customer_id__customer_id__ref_dim_customers_  [[31mFAIL 9556[0m in 1.62s]
+[2026-08-15T18:00:24.616+0000] {subprocess.py:93} INFO - [0m18:00:24  41 of 42 START test relationships_fact_shipments_order_id__order_id__ref_fact_orders_  [RUN]
+[2026-08-15T18:00:24.748+0000] {subprocess.py:93} INFO - [0m18:00:24  37 of 42 FAIL 12860 relationships_fact_order_items_order_id__order_id__ref_fact_orders_  [[31mFAIL 12860[0m in 2.00s]
+[2026-08-15T18:00:24.761+0000] {subprocess.py:93} INFO - [0m18:00:24  42 of 42 START test unique_fact_shipments_shipment_id .......................... [RUN]
+[2026-08-15T18:00:25.449+0000] {subprocess.py:93} INFO - [0m18:00:25  39 of 42 PASS unique_fact_orders_order_id ...................................... [[32mPASS[0m in 1.54s]
+[2026-08-15T18:00:25.531+0000] {subprocess.py:93} INFO - [0m18:00:25  40 of 42 PASS not_null_fact_shipments_shipment_id .............................. [[32mPASS[0m in 1.39s]
+[2026-08-15T18:00:26.049+0000] {subprocess.py:93} INFO - [0m18:00:26  41 of 42 FAIL 6388 relationships_fact_shipments_order_id__order_id__ref_fact_orders_  [[31mFAIL 6388[0m in 1.43s]
+[2026-08-15T18:00:26.285+0000] {subprocess.py:93} INFO - [0m18:00:26  42 of 42 PASS unique_fact_shipments_shipment_id ................................ [[32mPASS[0m in 1.52s]
+[2026-08-15T18:00:26.383+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.386+0000] {subprocess.py:93} INFO - [0m18:00:26  Finished running 2 incremental models, 5 table models, 27 data tests, 8 view models in 0 hours 0 minutes and 26.90 seconds (26.90s).
+[2026-08-15T18:00:26.761+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.764+0000] {subprocess.py:93} INFO - [0m18:00:26  [31mCompleted with 4 errors, 0 partial successes, and 0 warnings:[0m
+[2026-08-15T18:00:26.766+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.771+0000] {subprocess.py:93} INFO - [0m18:00:26  [[31mERROR[0m]: in test relationships_fact_order_items_seller_id__seller_id__ref_dim_sellers_ (models/marts/schema.yml)
+[2026-08-15T18:00:26.775+0000] {subprocess.py:93} INFO - [0m18:00:26    Got 13597 results, configured to fail if != 0
+[2026-08-15T18:00:26.778+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.784+0000] {subprocess.py:93} INFO - [0m18:00:26    compiled code at target/compiled/hybrid_elt_lakehouse/models/marts/schema.yml/relationships_fact_order_items_9a9532dcf5fbd81824264dbef8eac61e.sql
+[2026-08-15T18:00:26.788+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.793+0000] {subprocess.py:93} INFO - [0m18:00:26  [[31mERROR[0m]: in test relationships_fact_orders_customer_id__customer_id__ref_dim_customers_ (models/marts/schema.yml)
+[2026-08-15T18:00:26.796+0000] {subprocess.py:93} INFO - [0m18:00:26    Got 9556 results, configured to fail if != 0
+[2026-08-15T18:00:26.799+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.804+0000] {subprocess.py:93} INFO - [0m18:00:26    compiled code at target/compiled/hybrid_elt_lakehouse/models/marts/schema.yml/relationships_fact_orders_3769f5b9747a78e2aa34f9e73aa270d6.sql
+[2026-08-15T18:00:26.809+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.813+0000] {subprocess.py:93} INFO - [0m18:00:26  [[31mERROR[0m]: in test relationships_fact_order_items_order_id__order_id__ref_fact_orders_ (models/marts/schema.yml)
+[2026-08-15T18:00:26.816+0000] {subprocess.py:93} INFO - [0m18:00:26    Got 12860 results, configured to fail if != 0
+[2026-08-15T18:00:26.818+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.820+0000] {subprocess.py:93} INFO - [0m18:00:26    compiled code at target/compiled/hybrid_elt_lakehouse/models/marts/schema.yml/relationships_fact_order_items_40f3126aaf69b9319cf8a1bfc6dfca58.sql
+[2026-08-15T18:00:26.824+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.827+0000] {subprocess.py:93} INFO - [0m18:00:26  [[31mERROR[0m]: in test relationships_fact_shipments_order_id__order_id__ref_fact_orders_ (models/marts/schema.yml)
+[2026-08-15T18:00:26.831+0000] {subprocess.py:93} INFO - [0m18:00:26    Got 6388 results, configured to fail if != 0
+[2026-08-15T18:00:26.835+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.839+0000] {subprocess.py:93} INFO - [0m18:00:26    compiled code at target/compiled/hybrid_elt_lakehouse/models/marts/schema.yml/relationships_fact_shipments_9bfa9c1e6f595731083d4a9fc430b22b.sql
+[2026-08-15T18:00:26.844+0000] {subprocess.py:93} INFO - [0m18:00:26
+[2026-08-15T18:00:26.848+0000] {subprocess.py:93} INFO - [0m18:00:26  Done. PASS=38 WARN=0 ERROR=4 SKIP=0 NO-OP=0 REUSED=0 TOTAL=42
+[2026-08-15T18:00:29.155+0000] {subprocess.py:97} INFO - Command exited with return code 1
+[2026-08-15T18:00:29.159+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-08-15T18:00:29.181+0000] {taskinstance.py:2905} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py", line 465, in _execute_task
+    result = _execute_callable(context=context, **execute_callable_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py", line 432, in _execute_callable
+    return execute_callable(context=context, **execute_callable_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/models/baseoperator.py", line 401, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/operators/bash.py", line 243, in execute
+    raise AirflowException(
+airflow.exceptions.AirflowException: Bash command failed. The command returned a non-zero exit code 1.
+[2026-08-15T18:00:29.190+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=hybrid_lakehouse_daily_pipeline, task_id=run_dbt_gold, run_id=manual__2026-08-15T17:44:39.761816+00:00, execution_date=20260815T174439, start_date=20260815T175952, end_date=20260815T180029
+[2026-08-15T18:00:29.212+0000] {standard_task_runner.py:110} ERROR - Failed to execute job 15 for task run_dbt_gold (Bash command failed. The command returned a non-zero exit code 1.; 1079)
+[2026-08-15T18:00:29.238+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 1
+[2026-08-15T18:00:29.256+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-08-15T18:00:29.260+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
