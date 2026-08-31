@@ -25,17 +25,25 @@ SUBSCRIPTION_PATH = f"projects/{PROJECT_ID}/subscriptions/{SUBSCRIPTION_ID}"
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CREDENTIALS_PATH
 
-class ParseAndFilterOrdersFn(beam.DoFn):
+class ParseEventsFn(beam.DoFn):
+    """
+    Parses each Pub/Sub message and emits aggregation tuples.
+    - `orders`  → (key, (0.0, 1)) : contributes 1 to order count
+    - `payments` → (key, (payment_value, 0)) : contributes revenue
+    Both use the same key 'global' so CombinePerKey merges them in the same window.
+    """
     def process(self, element):
         try:
-            # Parse the Pub/Sub message
             data = json.loads(element.decode("utf-8"))
-            # Only process "orders"
-            if data.get("__entity") == "orders":
-                # We yield a tuple of (dummy_key, (revenue, 1))
-                # Revenue is stored in 'total_amount'
-                revenue = float(data.get("total_amount", 0.0))
-                yield ("global", (revenue, 1))
+            entity = data.get("__entity")
+
+            if entity == "orders":
+                yield ("global", (0.0, 1))
+
+            elif entity == "payments":
+                revenue = float(data.get("payment_value", 0.0))
+                yield ("global", (revenue, 0))
+
         except Exception as e:
             logging.warning(f"Failed to parse message: {e}")
 
@@ -53,19 +61,68 @@ class PrintDashboardFn(beam.DoFn):
         print("="*50 + "\n")
         yield element
 
+class WriteToFirestoreFn(beam.DoFn):
+    def __init__(self, project_id):
+        self.project_id = project_id
+
+    def setup(self):
+        from google.cloud import firestore
+        self.db = firestore.Client(project=self.project_id)
+
+    def process(self, element, window=beam.DoFn.WindowParam):
+        from google.cloud.firestore import SERVER_TIMESTAMP
+        from google.cloud.firestore_v1 import transforms
+
+        key, (total_revenue, order_count) = element
+        window_end_dt = window.end.to_utc_datetime()
+        today = window_end_dt.strftime("%Y-%m-%d")
+        avg_order_value = (total_revenue / order_count) if order_count > 0 else 0.0
+
+        try:
+            # --- Document 1: live_metrics (overwrite every 30s) ---
+            # Shows velocity: what happened in the LAST 30 seconds
+            live_ref = self.db.collection("realtime_dashboard").document("live_metrics")
+            live_ref.set({
+                "orders_in_window": order_count,
+                "revenue_in_window": round(total_revenue, 2),
+                "avg_order_value": round(avg_order_value, 2),
+                "window_end": window_end_dt,
+                "window_time": window_end_dt.strftime("%H:%M:%S"),
+            })
+
+            # --- Document 2: daily_totals (atomic increment) ---
+            # Shows running totals accumulated since the pipeline started today
+            daily_ref = self.db.collection("realtime_dashboard").document(f"daily_totals_{today}")
+            daily_ref.set({
+                "date": today,
+                "total_orders": transforms.Increment(order_count),
+                "total_revenue": transforms.Increment(round(total_revenue, 2)),
+                "last_updated": SERVER_TIMESTAMP,
+            }, merge=True)
+
+            logging.info(
+                f"✅ Firestore updated | Window: Orders={order_count}, "
+                f"Revenue={total_revenue:,.0f} VND, Avg={avg_order_value:,.0f} VND"
+            )
+        except Exception as e:
+            logging.error(f"❌ Firestore write failed: {e}")
+
+        yield element
+
+
 def run():
     logging.getLogger().setLevel(logging.INFO)
     print("🚀 Starting Speed Layer (Apache Beam DirectRunner)...")
     print("Waiting for messages...")
 
-    options = PipelineOptions()
+    options = PipelineOptions(["--runner=DirectRunner"])
     options.view_as(StandardOptions).streaming = True
 
     with beam.Pipeline(options=options) as p:
         (
             p
             | "Read from Pub/Sub" >> beam.io.ReadFromPubSub(subscription=SUBSCRIPTION_PATH)
-            | "Parse & Filter Orders" >> beam.ParDo(ParseAndFilterOrdersFn())
+            | "Parse Events" >> beam.ParDo(ParseEventsFn())
             | "Window 30s" >> beam.WindowInto(window.FixedWindows(30))
             | "Sum Revenue & Count" >> beam.CombinePerKey(
                 lambda values: (
@@ -74,6 +131,7 @@ def run():
                 )
             )
             | "Print Dashboard" >> beam.ParDo(PrintDashboardFn())
+            | "Write to Firestore" >> beam.ParDo(WriteToFirestoreFn(PROJECT_ID))
         )
 
 if __name__ == "__main__":
