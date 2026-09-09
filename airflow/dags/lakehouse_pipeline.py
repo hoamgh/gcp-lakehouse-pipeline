@@ -10,6 +10,7 @@ from dag_config import (
     DEFAULT_ARGS,
     PROJECT_ID,
     REGION,
+    batch_id_template,
     get_batch_config,
     make_batch_id,
 )
@@ -25,6 +26,7 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     tags=["lakehouse", "spark", "serverless", "dbt"],
+    user_defined_macros={"make_batch_id": make_batch_id},
 ) as dag:
     # 1. Staging -> Bronze (Schema validation + DLQ routing)
     run_raw_to_bronze = DataprocCreateBatchOperator(
@@ -32,7 +34,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         batch=get_batch_config("stream_raw_to_bronze.py"),
-        batch_id=make_batch_id("raw-to-bronze"),
+        batch_id=batch_id_template("raw-to-bronze"),
         sla=timedelta(hours=1),
     )
 
@@ -42,17 +44,18 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         batch=get_batch_config("stream_bronze_to_silver.py"),
-        batch_id=make_batch_id("bronze-to-silver"),
+        batch_id=batch_id_template("bronze-to-silver"),
         sla=timedelta(hours=1),
     )
 
-    # 3. Analyze DLQ
+    # 3. Analyze DLQ. This is observational: rejected records are reported but
+    # do not fail the task; inability to execute the analysis still fails it.
     run_dlq_analysis = DataprocCreateBatchOperator(
         task_id="run_dlq_analysis",
         project_id=PROJECT_ID,
         region=REGION,
         batch=get_batch_config("dlq_analysis.py"),
-        batch_id=make_batch_id("dlq-analysis"),
+        batch_id=batch_id_template("dlq-analysis"),
     )
 
     # 4. Silver -> Gold (dbt transformations in BigQuery)
@@ -66,37 +69,23 @@ with DAG(
     run_bronze_to_silver >> run_dbt_gold
 
     @task
-    def report_gold_funnel():
-        """Reads row count from BigQuery Gold tables and logs them to Cloud Logging"""
+    def reconcile_gold_layer():
+        """Reconcile Silver control totals and Gold integrity; fail on hard errors."""
+        from airflow.exceptions import AirflowException
+        from airflow.operators.python import get_current_context
         from google.cloud import bigquery
         from google.cloud import logging as cloud_logging
+        from reconciliation import raise_for_reconciliation_failures, run_reconciliation
 
-        # Initialize clients
         bq_client = bigquery.Client(project=PROJECT_ID)
         log_client = cloud_logging.Client(project=PROJECT_ID)
         logger = log_client.logger("lakehouse_pipeline")
+        dag_run_id = get_current_context()["run_id"]
+        try:
+            results = run_reconciliation(bq_client, logger, PROJECT_ID, dag_run_id)
+        except RuntimeError as exc:
+            raise AirflowException(str(exc)) from exc
 
-        # Assuming dbt builds into the `lakehouse_gold` dataset
-        dataset_id = f"{PROJECT_ID}.lakehouse_gold"
+        raise_for_reconciliation_failures(results, AirflowException)
 
-        query = f"""
-            SELECT table_id, row_count
-            FROM `{dataset_id}.__TABLES__`
-            WHERE table_id IN (
-                'fact_orders', 'fact_order_items', 'fact_payments',
-                'fact_reviews', 'fact_shipments', 'dim_customers',
-                'dim_products', 'dim_sellers', 'dim_date'
-            )
-        """
-        results = bq_client.query(query).result()
-        for row in results:
-            payload = {
-                "event_type": "funnel_reconciliation",
-                "entity": row["table_id"].replace("fact_", "").replace("dim_", ""),
-                "layer": "gold",
-                "total_count": row["row_count"],
-            }
-            logger.log_struct(payload, severity="INFO")
-            print(f"Logged Gold Funnel for {row['table_id']}: {row['row_count']}")
-
-    run_dbt_gold >> report_gold_funnel()
+    run_dbt_gold >> reconcile_gold_layer()

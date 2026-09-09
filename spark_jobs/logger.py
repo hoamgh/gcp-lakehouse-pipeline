@@ -56,15 +56,34 @@ def log_ingestion(entity, record_count, batch_id=None, source="stream_to_pubsub"
     log_event("raw_data_ingestion", payload)
 
 
-def log_quality_check(entity, corrupt_records_count, total_records=None):
+def log_quality_check(
+    entity,
+    corrupt_records_count,
+    total_records=None,
+    valid_records_count=None,
+    batch_id=None,
+    processing_timestamp=None,
+):
     """MON2: Bronze Quality Monitor"""
     payload = {
         "entity": entity,
         "corrupt_records_count": corrupt_records_count,
+        "rejected_count": corrupt_records_count,
         "action": "sent_to_dlq",
     }
     if total_records is not None:
         payload["total_records"] = total_records
+        payload["source_count"] = total_records
+        payload["error_rate"] = (
+            corrupt_records_count / total_records if total_records else 0.0
+        )
+    if valid_records_count is not None:
+        payload["valid_records_count"] = valid_records_count
+        payload["valid_count"] = valid_records_count
+    if batch_id is not None:
+        payload["batch_id"] = batch_id
+    if processing_timestamp is not None:
+        payload["processing_timestamp"] = processing_timestamp
 
     severity = "ERROR" if corrupt_records_count > 0 else "INFO"
     log_event("bronze_quality_check", payload, severity=severity)

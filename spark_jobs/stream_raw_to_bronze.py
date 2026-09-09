@@ -1,12 +1,13 @@
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 from functools import reduce
 
+from pyspark import StorageLevel
 from pyspark.sql.functions import col, current_timestamp, lit, when
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, StructField
 
-# Import schemas from config
 sys.path.append(os.path.dirname(__file__))
 from config import (
     BRONZE_DIR,
@@ -18,35 +19,123 @@ from config import (
 )
 
 
+def counts_from_classification_rows(rows):
+    """Convert one classification aggregation into reconciled counters."""
+    counts = {True: 0, False: 0}
+    for row in rows:
+        counts[bool(row["_is_rejected"])] = int(row["count"])
+
+    valid_count = counts[False]
+    rejected_count = counts[True]
+    source_count = valid_count + rejected_count
+    return {
+        "source_count": source_count,
+        "valid_count": valid_count,
+        "rejected_count": rejected_count,
+        "error_rate": rejected_count / source_count if source_count else 0.0,
+    }
+
+
+def classify_records(annotated_df, required_columns):
+    """Classify every source row exactly once as valid or rejected."""
+    missing_required = reduce(
+        lambda left, right: left | right,
+        [col(name).isNull() for name in required_columns],
+    )
+    invalid_record = col("_corrupt_record").isNotNull() | missing_required
+    return annotated_df.withColumn("_is_rejected", invalid_record).withColumn(
+        "_error_reason",
+        when(
+            col("_corrupt_record").isNotNull(),
+            lit("malformed_json_or_type_mismatch"),
+        )
+        .when(missing_required, lit("missing_required_field"))
+        .otherwise(lit(None).cast("string")),
+    )
+
+
+def bronze_transaction_app_id(entity):
+    """Stable Delta transaction identity for one entity's checkpointed stream."""
+    return f"raw-to-bronze-{entity}"
+
+
+def dlq_epoch_path(entity, epoch_id):
+    """Stable overwrite target that makes one DLQ epoch replay idempotent."""
+    return f"{DLQ_DIR}/{entity}/epoch_id={int(epoch_id)}"
+
+
+def process_classified_batch(classified_df, batch_id, entity):
+    """Idempotently write both outcomes and emit counts from one cached batch."""
+    from logger import log_quality_check
+
+    processing_timestamp = datetime.now(timezone.utc).isoformat()
+    cached = classified_df.persist(StorageLevel.MEMORY_AND_DISK)
+    try:
+        # This single aggregation action materializes the cache and derives all counters.
+        metrics = counts_from_classification_rows(
+            cached.groupBy("_is_rejected").count().collect()
+        )
+        if metrics["source_count"] != metrics["valid_count"] + metrics["rejected_count"]:
+            raise RuntimeError(
+                f"Classification counts do not reconcile for {entity} batch {batch_id}: {metrics}"
+            )
+
+        (
+            cached.filter(~col("_is_rejected"))
+            .drop("_corrupt_record", "_error_reason", "_is_rejected")
+            .write.format("delta")
+            .mode("append")
+            .option("mergeSchema", "true")
+            .option("txnAppId", bronze_transaction_app_id(entity))
+            .option("txnVersion", int(batch_id))
+            .save(f"{BRONZE_DIR}/{entity}")
+        )
+        if metrics["rejected_count"]:
+            (
+                cached.filter(col("_is_rejected"))
+                .drop("_is_rejected")
+                .withColumn("_batch_id", lit(int(batch_id)))
+                .withColumn("_processed_at", lit(processing_timestamp))
+                .write.format("json")
+                .mode("overwrite")
+                .save(dlq_epoch_path(entity, batch_id))
+            )
+
+        log_quality_check(
+            entity=entity,
+            corrupt_records_count=metrics["rejected_count"],
+            total_records=metrics["source_count"],
+            valid_records_count=metrics["valid_count"],
+            batch_id=batch_id,
+            processing_timestamp=processing_timestamp,
+        )
+        logging.info(
+            "classification_metrics entity=%s batch_id=%s processing_timestamp=%s "
+            "source_count=%s valid_count=%s rejected_count=%s",
+            entity,
+            batch_id,
+            processing_timestamp,
+            metrics["source_count"],
+            metrics["valid_count"],
+            metrics["rejected_count"],
+        )
+    finally:
+        cached.unpersist()
+
+
 def stream_raw_to_bronze():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     logging.info("Starting Batch Execution: Raw -> Bronze")
-
     spark = get_spark_session("StreamRawToBronze")
     spark.sparkContext.setLogLevel("WARN")
-
-    print(f"Starting AvailableNow ingestion from: {STAGING_DIR}")
-
-    from logger import log_funnel_count, log_quality_check
-
     queries = []
 
-    for entity in ENTITY_SCHEMAS:
-        print(f"Setting up stream for entity: {entity}")
-
-        schema, _ = ENTITY_SCHEMAS[entity]
-
-        # Ensure directory exists before starting the stream (only for local paths)
+    for entity, (schema, _) in ENTITY_SCHEMAS.items():
         source_dir = f"{STAGING_DIR}/{entity}"
         if not source_dir.startswith("gs://"):
             os.makedirs(source_dir, exist_ok=True)
 
-        # Add _corrupt_record to the schema to catch schema errors
-        from pyspark.sql.types import StructField
-
         schema_with_corrupt = schema.add(StructField("_corrupt_record", StringType(), True))
-
-        # Read from raw JSON files as a stream
         raw_stream = (
             spark.readStream.format("json")
             .schema(schema_with_corrupt)
@@ -54,93 +143,26 @@ def stream_raw_to_bronze():
             .option("columnNameOfCorruptRecord", "_corrupt_record")
             .load(source_dir)
         )
-
-        # Add metadata columns
-        df_annotated = raw_stream.withColumn("_ingested_at", current_timestamp()).withColumn(
+        annotated = raw_stream.withColumn("_ingested_at", current_timestamp()).withColumn(
             "source", lit("streaming")
         )
+        classified = classify_records(annotated, REQUIRED_COLUMNS[entity])
 
-        missing_required = reduce(
-            lambda left, right: left | right,
-            [col(name).isNull() for name in REQUIRED_COLUMNS[entity]],
-        )
-        invalid_record = col("_corrupt_record").isNotNull() | missing_required
-
-        df_bronze = df_annotated.filter(~invalid_record).drop("_corrupt_record")
-        df_dlq = df_annotated.filter(invalid_record).withColumn(
-            "_error_reason",
-            when(
-                col("_corrupt_record").isNotNull(), lit("malformed_json_or_type_mismatch")
-            ).otherwise(lit("missing_required_field")),
-        )
-
-        # Write to Bronze Delta using AvailableNow trigger
-        query_bronze = (
-            df_bronze.writeStream.format("delta")
-            .outputMode("append")
-            .option("mergeSchema", "true")
+        query = (
+            classified.writeStream.foreachBatch(
+                lambda df, epoch_id, e=entity: process_classified_batch(df, epoch_id, e)
+            )
             .option("checkpointLocation", f"{BRONZE_DIR}/_checkpoints/{entity}")
             .trigger(availableNow=True)
-            .start(f"{BRONZE_DIR}/{entity}")
+            .start()
         )
+        queries.append(query)
+        logging.info("Started classified batch processing for entity=%s", entity)
 
-        queries.append({"query": query_bronze, "type": "bronze", "entity": entity})
-        logging.info(f"Started batch processing for entity: {entity}")
+    for query in queries:
+        query.awaitTermination()
 
-        # Write to DLQ JSON using AvailableNow trigger
-        query_dlq = (
-            df_dlq.writeStream.format("json")
-            .option("checkpointLocation", f"{DLQ_DIR}/_checkpoints/{entity}")
-            .trigger(availableNow=True)
-            .start(f"{DLQ_DIR}/{entity}")
-        )
-
-        queries.append({"query": query_dlq, "type": "dlq", "entity": entity})
-
-    logging.info("Waiting for all entities to finish processing this batch...")
-
-    # Wait for queries and collect metrics
-    for q_dict in queries:
-        q = q_dict["query"]
-        q.awaitTermination()
-
-    # After all queries finish for this AvailableNow batch, process metrics
-    # We group by entity to sum up metrics
-    metrics = {}
-    for q_dict in queries:
-        entity = q_dict["entity"]
-        q_type = q_dict["type"]
-        q = q_dict["query"]
-
-        # Sum numInputRows across all recent micro-batches for this query
-        total_input = 0
-        if q.recentProgress:
-            total_input = sum([rp.get("numInputRows", 0) for rp in q.recentProgress])
-
-        if entity not in metrics:
-            metrics[entity] = {"bronze": 0, "dlq": 0}
-
-        metrics[entity][q_type] += total_input
-
-    # Log metrics per entity
-    for entity, counts in metrics.items():
-        total_dlq = counts["dlq"]
-        total_bronze = counts["bronze"]
-        total = total_dlq + total_bronze
-        if total > 0:
-            log_quality_check(entity=entity, corrupt_records_count=total_dlq, total_records=total)
-
-        # Funnel Reconciliation: Read actual count from Delta table
-        bronze_table_path = f"{BRONZE_DIR}/{entity}"
-        if os.path.exists(bronze_table_path) or bronze_table_path.startswith("gs://"):
-            try:
-                actual_bronze_count = spark.read.format("delta").load(bronze_table_path).count()
-                log_funnel_count(entity=entity, layer="bronze", count=actual_bronze_count)
-            except Exception as e:
-                logging.warning(f"Failed to count Bronze table for {entity}: {e}")
-
-    logging.info("Batch execution completed! Shutting down Spark.")
-    print("All streaming queries completed and metrics logged.")
+    logging.info("Batch execution completed")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: dim_customers
-    description: "SCD Type 2 customer dimension generated from customers_snapshot."
+    description: "SCD Type 2 customer dimension. The first real version resolves an inferred member without changing its SK."
     columns:
       - name: customer_sk
         tests: [unique, not_null]
@@ -33,7 +33,7 @@ models:
         tests: [unique, not_null]
 
   - name: fact_orders
-    description: "Transaction fact at one row per order; customer SK is fixed on first load."
+    description: "Transaction fact at one row per order; customer SK identifies the SCD2 version valid at purchase time."
     columns:
       - name: order_id
         tests: [unique, not_null]
@@ -46,8 +46,6 @@ models:
               arguments:
                 to: ref('dim_customers')
                 field: customer_sk
-              config:
-                severity: warn
       - name: purchase_date_id
         tests:
           - relationships:
