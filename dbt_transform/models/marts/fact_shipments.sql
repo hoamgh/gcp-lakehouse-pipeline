@@ -2,23 +2,24 @@
     config(
         materialized='incremental',
         unique_key='shipment_id',
-        merge_update_columns=['order_id', 'shipping_status', 'event_timestamp']
+        incremental_strategy='merge'
     )
 }}
 
 SELECT
-    shipment_id,
-    order_id,
-    carrier,
-    tracking_number,
-    shipping_status,
-    shipped_date,
-    estimated_delivery_date,
-    actual_delivery_date,
-    event_timestamp
-FROM {{ ref('stg_shipments') }}
-
-{% if is_incremental() %}
-  -- This filter will only be applied on an incremental run
-  WHERE event_timestamp > (SELECT MAX(event_timestamp) FROM {{ this }})
-{% endif %}
+    s.shipment_id,
+    s.order_id,
+    s.carrier,
+    s.tracking_number,
+    s.shipping_status,
+    s.shipped_date,
+    s.estimated_delivery_date,
+    s.actual_delivery_date,
+    s.event_timestamp
+FROM {{ ref('stg_shipments') }} s
+WHERE s.order_id IS NOT NULL
+  AND EXISTS (
+      SELECT 1 FROM {{ ref('stg_orders') }} o
+      WHERE o.order_id = s.order_id
+        AND o.order_status != 'TEST_STATUS'
+  )

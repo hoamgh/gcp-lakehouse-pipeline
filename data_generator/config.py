@@ -7,6 +7,7 @@ and Vietnamese master data (provinces, cities, product categories).
 """
 
 import random
+
 import numpy as np
 
 # ---------------------------------------------------------------------------
@@ -55,40 +56,58 @@ CDC_UPDATE_RATIO = 0.30  # ~30% of batch will be status updates on existing ship
 # ---------------------------------------------------------------------------
 
 VIETNAM_PROVINCES = [
-    {"province_code": "HN",  "province_name": "Ha Noi"},
+    {"province_code": "HN", "province_name": "Ha Noi"},
     {"province_code": "HCM", "province_name": "Ho Chi Minh"},
-    {"province_code": "DN",  "province_name": "Da Nang"},
-    {"province_code": "HP",  "province_name": "Hai Phong"},
-    {"province_code": "CT",  "province_name": "Can Tho"},
-    {"province_code": "BD",  "province_name": "Binh Duong"},
+    {"province_code": "DN", "province_name": "Da Nang"},
+    {"province_code": "HP", "province_name": "Hai Phong"},
+    {"province_code": "CT", "province_name": "Can Tho"},
+    {"province_code": "BD", "province_name": "Binh Duong"},
     {"province_code": "DNG", "province_name": "Dong Nai"},
-    {"province_code": "KH",  "province_name": "Khanh Hoa"},
+    {"province_code": "KH", "province_name": "Khanh Hoa"},
     {"province_code": "TTH", "province_name": "Thua Thien Hue"},
-    {"province_code": "QN",  "province_name": "Quang Ninh"},
-    {"province_code": "NA",  "province_name": "Nghe An"},
-    {"province_code": "TH",  "province_name": "Thanh Hoa"},
-    {"province_code": "LA",  "province_name": "Long An"},
-    {"province_code": "GL",  "province_name": "Gia Lai"},
-    {"province_code": "DL",  "province_name": "Dak Lak"},
+    {"province_code": "QN", "province_name": "Quang Ninh"},
+    {"province_code": "NA", "province_name": "Nghe An"},
+    {"province_code": "TH", "province_name": "Thanh Hoa"},
+    {"province_code": "LA", "province_name": "Long An"},
+    {"province_code": "GL", "province_name": "Gia Lai"},
+    {"province_code": "DL", "province_name": "Dak Lak"},
 ]
 
 # Districts/cities grouped by province_code
 VIETNAM_CITIES = {
-    "HN":  ["Ba Dinh", "Hoan Kiem", "Cau Giay", "Dong Da", "Thanh Xuan", "Ha Dong", "Long Bien", "Nam Tu Liem"],
-    "HCM": ["Quan 1", "Quan 3", "Quan 7", "Binh Thanh", "Go Vap", "Thu Duc", "Phu Nhuan", "Tan Binh"],
-    "DN":  ["Hai Chau", "Thanh Khe", "Son Tra", "Lien Chieu", "Ngu Hanh Son"],
-    "HP":  ["Hong Bang", "Le Chan", "Ngo Quyen", "Kien An"],
-    "CT":  ["Ninh Kieu", "Binh Thuy", "Cai Rang", "O Mon"],
-    "BD":  ["Thu Dau Mot", "Di An", "Thuan An", "Ben Cat"],
+    "HN": [
+        "Ba Dinh",
+        "Hoan Kiem",
+        "Cau Giay",
+        "Dong Da",
+        "Thanh Xuan",
+        "Ha Dong",
+        "Long Bien",
+        "Nam Tu Liem",
+    ],
+    "HCM": [
+        "Quan 1",
+        "Quan 3",
+        "Quan 7",
+        "Binh Thanh",
+        "Go Vap",
+        "Thu Duc",
+        "Phu Nhuan",
+        "Tan Binh",
+    ],
+    "DN": ["Hai Chau", "Thanh Khe", "Son Tra", "Lien Chieu", "Ngu Hanh Son"],
+    "HP": ["Hong Bang", "Le Chan", "Ngo Quyen", "Kien An"],
+    "CT": ["Ninh Kieu", "Binh Thuy", "Cai Rang", "O Mon"],
+    "BD": ["Thu Dau Mot", "Di An", "Thuan An", "Ben Cat"],
     "DNG": ["Bien Hoa", "Long Khanh", "Nhon Trach", "Vinh Cuu"],
-    "KH":  ["Nha Trang", "Cam Ranh", "Ninh Hoa"],
+    "KH": ["Nha Trang", "Cam Ranh", "Ninh Hoa"],
     "TTH": ["Hue", "Huong Thuy", "Huong Tra"],
-    "QN":  ["Ha Long", "Cam Pha", "Uong Bi", "Mong Cai"],
-    "NA":  ["Vinh", "Cua Lo", "Thai Hoa"],
-    "TH":  ["Thanh Hoa", "Bim Son", "Sam Son"],
-    "LA":  ["Tan An", "Kien Tuong", "Ben Luc"],
-    "GL":  ["Pleiku", "An Khe", "Ayun Pa"],
-    "DL":  ["Buon Ma Thuot", "Buon Ho", "Ea Kar"],
+    "QN": ["Ha Long", "Cam Pha", "Uong Bi", "Mong Cai"],
+    "NA": ["Vinh", "Cua Lo", "Thai Hoa"],
+    "TH": ["Thanh Hoa", "Bim Son", "Sam Son"],
+    "LA": ["Tan An", "Kien Tuong", "Ben Luc"],
+    "GL": ["Pleiku", "An Khe", "Ayun Pa"],
+    "DL": ["Buon Ma Thuot", "Buon Ho", "Ea Kar"],
 }
 
 # Province weights — HCM and HN dominate e-commerce
@@ -111,38 +130,55 @@ VIETNAM_PROVINCE_WEIGHTS = [
 ]
 
 PRODUCT_CATEGORIES = [
-    "dien_thoai_phu_kien",      # phones & accessories
-    "may_tinh_laptop",          # computers & laptops
-    "dien_tu_dien_lanh",        # electronics & appliances
-    "thoi_trang_nam",           # men's fashion
-    "thoi_trang_nu",            # women's fashion
-    "me_va_be",                 # mom & baby
-    "suc_khoe_lam_dep",         # health & beauty
-    "do_gia_dung",              # home & living
-    "the_thao_da_ngoai",        # sports & outdoor
-    "sach_van_phong_pham",      # books & stationery
-    "thuc_pham_do_uong",        # food & beverages
-    "o_to_xe_may",              # automotive & motorbike
-    "giay_dep_tui_xach",        # shoes & bags
-    "dong_ho_trang_suc",        # watches & jewelry
-    "do_choi",                  # toys
-    "may_anh_quay_phim",        # cameras
-    "nha_cua_doi_song",         # home & life
-    "bach_hoa_online",          # online groceries
-    "voucher_dich_vu",          # vouchers & services
-    "thiet_bi_so",              # digital devices
+    "dien_thoai_phu_kien",  # phones & accessories
+    "may_tinh_laptop",  # computers & laptops
+    "dien_tu_dien_lanh",  # electronics & appliances
+    "thoi_trang_nam",  # men's fashion
+    "thoi_trang_nu",  # women's fashion
+    "me_va_be",  # mom & baby
+    "suc_khoe_lam_dep",  # health & beauty
+    "do_gia_dung",  # home & living
+    "the_thao_da_ngoai",  # sports & outdoor
+    "sach_van_phong_pham",  # books & stationery
+    "thuc_pham_do_uong",  # food & beverages
+    "o_to_xe_may",  # automotive & motorbike
+    "giay_dep_tui_xach",  # shoes & bags
+    "dong_ho_trang_suc",  # watches & jewelry
+    "do_choi",  # toys
+    "may_anh_quay_phim",  # cameras
+    "nha_cua_doi_song",  # home & life
+    "bach_hoa_online",  # online groceries
+    "voucher_dich_vu",  # vouchers & services
+    "thiet_bi_so",  # digital devices
 ]
 
 # Category weights — some categories sell more than others
 PRODUCT_CATEGORY_WEIGHTS = [
-    0.14, 0.10, 0.09, 0.08, 0.08, 0.07, 0.07, 0.06,
-    0.05, 0.04, 0.04, 0.03, 0.03, 0.02, 0.02, 0.02,
-    0.02, 0.01, 0.01, 0.02,
+    0.14,
+    0.10,
+    0.09,
+    0.08,
+    0.08,
+    0.07,
+    0.07,
+    0.06,
+    0.05,
+    0.04,
+    0.04,
+    0.03,
+    0.03,
+    0.02,
+    0.02,
+    0.02,
+    0.02,
+    0.01,
+    0.01,
+    0.02,
 ]
 
 CARRIERS = [
-    "giao_hang_nhanh",    # GHN
-    "giao_hang_tiet_kiem", # GHTK
+    "giao_hang_nhanh",  # GHN
+    "giao_hang_tiet_kiem",  # GHTK
     "viettel_post",
     "j_and_t_express",
     "ninja_van",
@@ -153,7 +189,13 @@ CARRIERS = [
 PRODUCT_NAME_PREFIXES = {
     "dien_thoai_phu_kien": ["Op lung", "Sac du phong", "Tai nghe", "Cap sac", "Kinh cuong luc"],
     "may_tinh_laptop": ["Chuot khong day", "Ban phim co", "USB", "Webcam", "Laptop stand"],
-    "dien_tu_dien_lanh": ["Quat mini", "Noi chien khong dau", "May xay sinh to", "Am sieu toc", "Robot hut bui"],
+    "dien_tu_dien_lanh": [
+        "Quat mini",
+        "Noi chien khong dau",
+        "May xay sinh to",
+        "Am sieu toc",
+        "Robot hut bui",
+    ],
     "thoi_trang_nam": ["Ao thun nam", "Quan jean nam", "Ao so mi", "Giay the thao", "That lung da"],
     "thoi_trang_nu": ["Dam nu", "Ao khoac nu", "Chan vay", "Tui xach nu", "Ao croptop"],
     "me_va_be": ["Binh sua", "Ta dan", "Xe day", "Do choi giao duc", "Quan ao tre em"],
@@ -166,12 +208,15 @@ PRODUCT_NAME_PREFIXES = {
 # Distribution functions
 # ---------------------------------------------------------------------------
 
+
 def weighted_choice(options: list, weights: list):
     """Pick one item from options using the given probability weights."""
     return np.random.choice(options, p=weights)
 
 
-def log_normal_price(mean: float = 3.5, sigma: float = 1.0, min_val: float = 10000.0, max_val: float = 50000000.0) -> float:
+def log_normal_price(
+    mean: float = 3.5, sigma: float = 1.0, min_val: float = 10000.0, max_val: float = 50000000.0
+) -> float:
     """
     Generate a price following a log-normal distribution (in VND).
     Most prices cluster low-to-mid range, few are very high.
@@ -194,15 +239,18 @@ def skewed_score() -> int:
 
 def random_installments() -> int:
     """Generate number of payment installments (1-12), weighted toward fewer."""
-    return int(np.random.choice(
-        [1, 2, 3, 4, 5, 6, 8, 10, 12],
-        p=[0.35, 0.15, 0.12, 0.10, 0.08, 0.07, 0.06, 0.04, 0.03]
-    ))
+    return int(
+        np.random.choice(
+            [1, 2, 3, 4, 5, 6, 8, 10, 12], p=[0.35, 0.15, 0.12, 0.10, 0.08, 0.07, 0.06, 0.04, 0.03]
+        )
+    )
 
 
 def pick_vietnam_location() -> dict:
     """Pick a random Vietnamese province + district, weighted toward HCM/HN."""
-    province = VIETNAM_PROVINCES[np.random.choice(len(VIETNAM_PROVINCES), p=VIETNAM_PROVINCE_WEIGHTS)]
+    province = VIETNAM_PROVINCES[
+        np.random.choice(len(VIETNAM_PROVINCES), p=VIETNAM_PROVINCE_WEIGHTS)
+    ]
     city = random.choice(VIETNAM_CITIES[province["province_code"]])
     zip_code = f"{random.randint(100000, 999999)}"
     return {

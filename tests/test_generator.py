@@ -8,9 +8,10 @@ Tests:
 - Schema completeness (all required fields present)
 """
 
-import sys
 import os
 import random
+import sys
+
 import numpy as np
 import pytest
 
@@ -18,7 +19,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "data_generator"))
 
 from config import RANDOM_SEED
-from generators import generate_all, IDRegistry
+from generators import generate_all
 
 
 @pytest.fixture(scope="module")
@@ -43,6 +44,7 @@ def generated_data():
 # ===========================================================================
 # FK Consistency Tests
 # ===========================================================================
+
 
 class TestFKConsistency:
     """Every foreign key must reference an existing primary key."""
@@ -91,6 +93,7 @@ class TestFKConsistency:
 # Distribution Tests
 # ===========================================================================
 
+
 class TestDistributions:
     """Statistical distributions should match expected patterns."""
 
@@ -98,7 +101,9 @@ class TestDistributions:
         """Delivered orders should be > 60% of total."""
         statuses = [o["order_status"] for o in generated_data["orders"]]
         delivered_ratio = statuses.count("delivered") / len(statuses)
-        assert delivered_ratio > 0.60, f"Delivered ratio {delivered_ratio:.2%} is too low (expected > 60%)"
+        assert delivered_ratio > 0.60, (
+            f"Delivered ratio {delivered_ratio:.2%} is too low (expected > 60%)"
+        )
 
     def test_review_score_skewed_high(self, generated_data):
         """Average review score should be > 3.5 (skewed toward 4-5)."""
@@ -111,21 +116,24 @@ class TestDistributions:
         for review in generated_data["reviews"]:
             assert 1 <= review["review_score"] <= 5
 
-    def test_prices_are_positive(self, generated_data):
-        """All prices must be positive."""
-        for item in generated_data["order_items"]:
-            assert item["price"] > 0
-            assert item["freight_value"] > 0
+    def test_dirty_price_rate_is_controlled(self, generated_data):
+        """Dirty prices are intentional and should remain a small minority."""
+        items = generated_data["order_items"]
+        dirty_ratio = sum(item["price"] <= 0 for item in items) / len(items)
+        assert 0 < dirty_ratio < 0.05
+        assert all(item["freight_value"] > 0 for item in items)
 
     def test_prices_in_vnd_range(self, generated_data):
         """Prices should be in VND range (>= 10,000 VND)."""
-        for item in generated_data["order_items"]:
+        clean_items = [item for item in generated_data["order_items"] if item["price"] > 0]
+        for item in clean_items:
             assert item["price"] >= 10000, f"Price {item['price']} seems too low for VND"
 
 
 # ===========================================================================
 # CDC Tests
 # ===========================================================================
+
 
 class TestCDC:
     """CDC logic for shipments should produce status updates."""
@@ -158,10 +166,18 @@ class TestCDC:
             pass
         # This is expected behavior but not strictly required for all seed values
 
+    def test_cdc_updates_are_full_after_images(self, generated_data):
+        """Shipment updates must not erase stable dimensional attributes."""
+        for shipment in generated_data["shipments"]:
+            assert shipment["order_id"] is not None
+            assert shipment["carrier"] is not None
+            assert shipment["tracking_number"] is not None
+
 
 # ===========================================================================
 # Schema Tests
 # ===========================================================================
+
 
 class TestSchema:
     """Every record must contain all required fields."""
@@ -171,7 +187,14 @@ class TestSchema:
         "products": ["product_id", "category", "product_name", "weight_g"],
         "sellers": ["seller_id", "seller_name", "city", "state"],
         "orders": ["order_id", "customer_id", "order_status", "purchase_timestamp"],
-        "order_items": ["order_id", "product_id", "seller_id", "price", "freight_value"],
+        "order_items": [
+            "order_item_id",
+            "order_id",
+            "product_id",
+            "seller_id",
+            "price",
+            "freight_value",
+        ],
         "payments": ["payment_id", "order_id", "payment_type", "installments", "payment_value"],
         "reviews": ["review_id", "order_id", "review_score"],
         "shipments": ["shipment_id", "shipping_status", "event_timestamp"],
@@ -189,7 +212,16 @@ class TestSchema:
 
     def test_all_entities_generated(self, generated_data):
         """All 8 entities must be present in the output."""
-        expected = {"customers", "products", "sellers", "orders", "order_items", "payments", "reviews", "shipments"}
+        expected = {
+            "customers",
+            "products",
+            "sellers",
+            "orders",
+            "order_items",
+            "payments",
+            "reviews",
+            "shipments",
+        }
         assert set(generated_data.keys()) == expected
 
     def test_all_entities_non_empty(self, generated_data):

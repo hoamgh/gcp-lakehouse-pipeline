@@ -24,3 +24,6 @@ models:
       +schema: staging
     marts:
       +materialized: table
+    quality:
+      +materialized: table
+      +schema: quality

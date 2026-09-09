@@ -122,7 +122,7 @@ flowchart TD
 ### 4. Foreign Key Violations in Gold Layer (Eventual Consistency)
 
 **Problem:** dbt `relationships` tests fail because parent records (Customers) arrive after child records (Orders) in streaming scenarios.
-**Solution:** This is expected behavior in eventually-consistent streaming architectures. The next DAG run backfills the missing parents. Tests are configured as `warn` severity to avoid blocking the pipeline while maintaining visibility.
+**Solution:** Late-arriving dimensions use inferred members. Orphan facts whose parent order is unavailable are preserved in `lakehouse_gold_quality` and excluded from conformed Gold tables. Relationship tests remain blocking and the production build currently passes without warnings.
 
 ### 5. Flash Sale Burst Simulation
 
@@ -137,7 +137,7 @@ The pipeline implements a **3-tier defense-in-depth** strategy where each Medall
 
 - **Bronze (Schema Defense):** PySpark `PERMISSIVE` mode catches structural errors (wrong types, malformed JSON). Bad records are routed to a **Dead Letter Queue** as raw JSON — never dropped — preserving the original payload + error reason for forensic replay.
 - **Silver (Semantic Defense):** `MERGE INTO` deduplicates CDC events; `NULL` imputation fills missing emails/fields with sentinel values (`unknown@placeholder.com`) rather than dropping rows, maintaining record counts.
-- **Gold (Business Logic Defense):** dbt models enforce domain rules in SQL (`WHERE price > 0`, `WHERE order_status != 'test'`). dbt tests (`unique`, `not_null`, `relationships`) run automatically on every `dbt build`, catching referential integrity issues post-transformation.
+- **Gold (Business Logic Defense):** dbt models enforce domain rules, SCD1/SCD2 dimensions, stable fact grains, and quarantine orphan facts in `lakehouse_gold_quality`. dbt tests (`unique`, `not_null`, `relationships`) run automatically on every `dbt build`.
 - **Observability:** Custom PySpark logger emits structured metrics (record counts, error rates, processing latency) to **Cloud Logging** at each layer. Anomalous error rates (>5% per batch) trigger alerts.
 - **Delta Lake Maintenance:** Weekly `OPTIMIZE` (file compaction) + `VACUUM` (7-day retention) runs via a dedicated Airflow DAG to prevent small-file degradation and manage storage costs.
 
@@ -245,7 +245,7 @@ Create a Python virtual environment and install dependencies:
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r data_generator/requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ### 5. Launch the Pipeline
@@ -268,6 +268,7 @@ python spark_jobs/beam_lambda_ingestion.py \
   --temp_location=gs://<YOUR_PROJECT_ID>-lakehouse/temp \
   --staging_location=gs://<YOUR_PROJECT_ID>-lakehouse/beam_staging \
   --service_account_email=<YOUR_SERVICE_ACCOUNT_EMAIL> \
+  --requirements_file=spark_jobs/requirements-beam.txt \
   --streaming
 ```
 
@@ -275,10 +276,10 @@ python spark_jobs/beam_lambda_ingestion.py \
 
 ```bash
 cd airflow
-docker compose up -d
+docker compose --env-file ../.env up -d
 ```
 
-1. Open `http://localhost:8081` in your browser (User: `admin`, Pass: `admin`).
+1. Open `http://localhost:8082` in your browser. Credentials come from `AIRFLOW_ADMIN_USERNAME` and `AIRFLOW_ADMIN_PASSWORD` in `.env`.
 2. Unpause the `hybrid_lakehouse_daily_pipeline` DAG.
 3. Airflow will automatically trigger Dataproc Serverless (Staging → Bronze → Silver) and then `dbt build` (Silver → Gold).
 
@@ -298,13 +299,15 @@ docker compose up -d
 ├── spark_jobs/                 # PySpark ETL for Dataproc Serverless
 │   ├── stream_raw_to_bronze.py # Staging → Bronze (Delta) + DLQ routing
 │   ├── stream_bronze_to_silver.py  # Bronze → Silver (MERGE + dedup)
-│   ├── speed_layer_rtagg.py    # Beam real-time aggregation → Firestore
+│   ├── beam_lambda_ingestion.py # Pub/Sub → GCS + Firestore T-branch
 │   ├── delta_maintenance.py    # OPTIMIZE + VACUUM maintenance
-│   └── deploy_to_dataproc.py   # Batch submission automation
+│   └── dlq_analysis.py         # DLQ metrics and diagnostics
 │
 ├── dbt_transform/              # Gold layer analytics (BigQuery)
 │   ├── models/staging/         # Views on Silver external tables
-│   └── models/marts/           # Star schema (fact + dim tables)
+│   ├── models/marts/           # Conformed facts and dimensions
+│   ├── models/quality/         # Quarantined orphan records
+│   └── snapshots/              # Customer SCD Type 2 history
 │
 ├── airflow/                    # Orchestration
 │   ├── dags/lakehouse_pipeline.py  # Daily: Bronze → Silver → dbt Gold

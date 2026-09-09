@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: dq_orphan_order_items
+    description: "Order items excluded from Gold because their parent order is unavailable."
+  - name: dq_orphan_payments
+    description: "Payments excluded from Gold because their parent order is unavailable."
+  - name: dq_orphan_reviews
+    description: "Reviews excluded from Gold because their parent order is unavailable."
+  - name: dq_orphan_shipments
+    description: "Shipments excluded from Gold because their parent order is unavailable."

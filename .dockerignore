@@ -1,0 +1,13 @@
+.git
+.env
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/logs
+**/target
+**/dbt_packages
+**/profiles.yml
+**/*service-account*.json
+**/hybrid-elt-lakehouse-pipeline-*.json
+README.pdf
+image

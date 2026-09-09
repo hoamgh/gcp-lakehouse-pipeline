@@ -2,7 +2,8 @@
     config(
         materialized='incremental',
         unique_key='product_id',
-        merge_update_columns=['category', 'product_name', 'weight_g', 'length_cm', 'height_cm', 'width_cm', 'valid_from', 'is_inferred']
+        incremental_strategy='merge',
+        merge_update_columns=['category', 'product_name', 'weight_g', 'length_cm', 'height_cm', 'width_cm', 'updated_at', 'is_inferred']
     )
 }}
 
@@ -15,7 +16,7 @@ WITH actual_products AS (
         length_cm,
         height_cm,
         width_cm,
-        CURRENT_TIMESTAMP() as valid_from,
+        CURRENT_TIMESTAMP() as updated_at,
         FALSE as is_inferred
     FROM {{ ref('stg_products') }}
 ),
@@ -28,7 +29,7 @@ inferred_products AS (
         NULL as length_cm,
         NULL as height_cm,
         NULL as width_cm,
-        CURRENT_TIMESTAMP() as valid_from,
+        CURRENT_TIMESTAMP() as updated_at,
         TRUE as is_inferred
     FROM {{ ref('stg_order_items') }}
     WHERE product_id NOT IN (SELECT product_id FROM actual_products)

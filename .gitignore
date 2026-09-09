@@ -5,6 +5,9 @@ service-account-key.json
 
 # Generated output data
 output/
+logs/
+airflow/logs/
+airflow/*.log
 
 # Python
 __pycache__/
@@ -28,6 +31,7 @@ dbt_transform/logs/
 dbt_transform/target/
 dbt_transform/dbt_packages/
 dbt_transform/profiles.yml
+dbt_transform/.user.yml
 
 # Specific Credentials
 hybrid-elt-lakehouse-pipeline-2110462e33d2.json

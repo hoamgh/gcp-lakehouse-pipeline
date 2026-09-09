@@ -7,24 +7,29 @@ Contains:
 - generate_all(): orchestrates generation in correct FK-dependency order
 """
 
-import uuid
 import random
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
-from faker import Faker
-
 from config import (
-    RECORD_COUNTS,
-    ORDER_STATUS_OPTIONS, ORDER_STATUS_WEIGHTS,
-    PAYMENT_TYPE_OPTIONS, PAYMENT_TYPE_WEIGHTS,
-    SHIPPING_STATUS_TRANSITION,
-    CDC_UPDATE_RATIO,
     CARRIERS,
-    weighted_choice, log_normal_price, skewed_score,
-    random_installments, pick_vietnam_location, pick_product_category,
+    CDC_UPDATE_RATIO,
+    ORDER_STATUS_OPTIONS,
+    ORDER_STATUS_WEIGHTS,
+    PAYMENT_TYPE_OPTIONS,
+    PAYMENT_TYPE_WEIGHTS,
+    RECORD_COUNTS,
+    SHIPPING_STATUS_TRANSITION,
     generate_product_name,
+    log_normal_price,
+    pick_product_category,
+    pick_vietnam_location,
+    random_installments,
+    skewed_score,
+    weighted_choice,
 )
+from faker import Faker
 
 fake = Faker("vi_VN")  # Vietnamese locale
 
@@ -32,6 +37,7 @@ fake = Faker("vi_VN")  # Vietnamese locale
 # ===========================================================================
 # ID Registry — manages FK pools + CDC state
 # ===========================================================================
+
 
 class IDRegistry:
     """
@@ -43,6 +49,7 @@ class IDRegistry:
         self._ids: dict[str, list[str]] = {}
         # CDC state: shipment_id -> current shipping_status
         self._shipment_states: dict[str, str] = {}
+        self._shipment_attributes: dict[str, dict[str, Any]] = {}
         # Track order_id -> list of shipment_ids for referential integrity
         self._order_shipments: dict[str, list[str]] = {}
 
@@ -67,10 +74,18 @@ class IDRegistry:
 
     # --- CDC helpers for shipments ---
 
-    def register_shipment(self, shipment_id: str, order_id: str, status: str) -> None:
+    def register_shipment(self, record: dict[str, Any]) -> None:
         """Register a shipment with its current status for CDC tracking."""
+        shipment_id = record["shipment_id"]
+        order_id = record["order_id"]
+        status = record["shipping_status"]
         self._shipment_states[shipment_id] = status
+        self._shipment_attributes[shipment_id] = record.copy()
         self._order_shipments.setdefault(order_id, []).append(shipment_id)
+
+    def get_shipment(self, shipment_id: str) -> dict[str, Any]:
+        """Return the latest full after-image for a shipment."""
+        return self._shipment_attributes[shipment_id].copy()
 
     def get_updatable_shipments(self) -> list[tuple[str, str]]:
         """
@@ -86,6 +101,7 @@ class IDRegistry:
     def update_shipment_status(self, shipment_id: str, new_status: str) -> None:
         """Update the CDC state of a shipment."""
         self._shipment_states[shipment_id] = new_status
+        self._shipment_attributes[shipment_id]["shipping_status"] = new_status
 
 
 # ===========================================================================
@@ -116,6 +132,7 @@ def _timestamp_after(base_ts: str, min_hours: int = 1, max_hours: int = 72) -> s
 
 # ---- 1. Customers ----
 
+
 def generate_customers(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n customer records with Vietnamese locations."""
     records = []
@@ -129,20 +146,25 @@ def generate_customers(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
             "phone": fake.phone_number(),
             "city": location["city"],
             "state": location["state"],
+            "zip_code": location["zip_code"],
         }
         # Inject Missing Value (Null) error for 2% of records (To be cleaned in Silver layer)
         if random.random() < 0.02:
             record["email"] = None
         # Inject schema error (type mismatch) for 1% of records (Realistic rate)
         if random.random() < 0.01:
-            record["customer_name"] = {"first_name": "Lỗi", "last_name": "Cấu Trúc"} # Dict instead of String
-            record["zip_code"] = [123, 456] # List instead of String
+            record["customer_name"] = {
+                "first_name": "Lỗi",
+                "last_name": "Cấu Trúc",
+            }  # Dict instead of String
+            record["zip_code"] = [123, 456]  # List instead of String
         records.append(record)
         registry.register("customers", cid)
     return records
 
 
 # ---- 2. Products ----
+
 
 def generate_products(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n product records with realistic dimensions."""
@@ -161,7 +183,7 @@ def generate_products(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
         }
         # Inject schema error (string instead of float) for 2% of records (Realistic rate)
         if random.random() < 0.02:
-            record["weight_g"] = "5 kg" # String instead of Float
+            record["weight_g"] = "5 kg"  # String instead of Float
         records.append(record)
         registry.register("products", pid)
     return records
@@ -169,23 +191,27 @@ def generate_products(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
 
 # ---- 3. Sellers ----
 
+
 def generate_sellers(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n seller records with Vietnamese locations."""
     records = []
     for _ in range(n):
         sid = str(uuid.uuid4())
         location = pick_vietnam_location()
-        records.append({
-            "seller_id": sid,
-            "seller_name": fake.company(),
-            "city": location["city"],
-            "state": location["state"],
-        })
+        records.append(
+            {
+                "seller_id": sid,
+                "seller_name": fake.company(),
+                "city": location["city"],
+                "state": location["state"],
+            }
+        )
         registry.register("sellers", sid)
     return records
 
 
 # ---- 4. Orders ----
+
 
 def generate_orders(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n order records referencing existing customer_ids."""
@@ -194,25 +220,32 @@ def generate_orders(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
         oid = str(uuid.uuid4())
         status = str(weighted_choice(ORDER_STATUS_OPTIONS, ORDER_STATUS_WEIGHTS))
         purchase_ts = _random_timestamp(_ORDER_START, _NOW)
-        approved_ts = _timestamp_after(purchase_ts, min_hours=0, max_hours=24) if status != "cancelled" else None
+        approved_ts = (
+            _timestamp_after(purchase_ts, min_hours=0, max_hours=24)
+            if status != "cancelled"
+            else None
+        )
 
         delivered_ts = None
         if status == "delivered":
             delivered_ts = _timestamp_after(purchase_ts, min_hours=48, max_hours=720)  # 2-30 days
 
-        records.append({
-            "order_id": oid,
-            "customer_id": registry.get_random("customers"),
-            "order_status": status,
-            "purchase_timestamp": purchase_ts,
-            "approved_timestamp": approved_ts,
-            "delivered_timestamp": delivered_ts,
-        })
+        records.append(
+            {
+                "order_id": oid,
+                "customer_id": registry.get_random("customers"),
+                "order_status": status,
+                "purchase_timestamp": purchase_ts,
+                "approved_timestamp": approved_ts,
+                "delivered_timestamp": delivered_ts,
+            }
+        )
         registry.register("orders", oid)
     return records
 
 
 # ---- 5. Order Items ----
+
 
 def generate_order_items(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """
@@ -224,23 +257,29 @@ def generate_order_items(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
 
     for _ in range(n):
         price = log_normal_price(mean=10.5, sigma=0.8, min_val=20000, max_val=30000000)
-        freight = round(price * random.uniform(0.03, 0.15) / 1000) * 1000  # freight 3-15%, rounded to 1000 VND
+        freight = (
+            round(price * random.uniform(0.03, 0.15) / 1000) * 1000
+        )  # freight 3-15%, rounded to 1000 VND
 
         # Introduce dirty data: 2% chance of negative price
         if random.random() < 0.02:
             price = -999.99
 
-        records.append({
-            "order_id": random.choice(order_ids),
-            "product_id": registry.get_random("products"),
-            "seller_id": registry.get_random("sellers"),
-            "price": price,
-            "freight_value": max(freight, 10000),  # min 10,000 VND shipping
-        })
+        records.append(
+            {
+                "order_item_id": str(uuid.uuid4()),
+                "order_id": random.choice(order_ids),
+                "product_id": registry.get_random("products"),
+                "seller_id": registry.get_random("sellers"),
+                "price": price,
+                "freight_value": max(freight, 10000),  # min 10,000 VND shipping
+            }
+        )
     return records
 
 
 # ---- 6. Payments ----
+
 
 def generate_payments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n payment records referencing order_id."""
@@ -253,17 +292,20 @@ def generate_payments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
 
         installments = random_installments() if payment_type == "credit_card" else 1
 
-        records.append({
-            "payment_id": str(uuid.uuid4()),
-            "order_id": random.choice(order_ids),
-            "payment_type": payment_type,
-            "installments": installments,
-            "payment_value": payment_value,
-        })
+        records.append(
+            {
+                "payment_id": str(uuid.uuid4()),
+                "order_id": random.choice(order_ids),
+                "payment_type": payment_type,
+                "installments": installments,
+                "payment_value": payment_value,
+            }
+        )
     return records
 
 
 # ---- 7. Reviews ----
+
 
 def generate_reviews(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """Generate n review records referencing order_id, with skewed scores."""
@@ -304,17 +346,20 @@ def generate_reviews(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
 
         review_ts = _random_timestamp(_ORDER_START + timedelta(days=7), _NOW)
 
-        records.append({
-            "review_id": str(uuid.uuid4()),
-            "order_id": random.choice(order_ids),
-            "review_score": score,
-            "comment": comment,
-            "review_timestamp": review_ts,
-        })
+        records.append(
+            {
+                "review_id": str(uuid.uuid4()),
+                "order_id": random.choice(order_ids),
+                "review_score": score,
+                "comment": comment,
+                "review_timestamp": review_ts,
+            }
+        )
     return records
 
 
 # ---- 8. Shipments (with CDC logic) ----
+
 
 def generate_shipments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
     """
@@ -334,7 +379,9 @@ def generate_shipments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
         shipment_id = str(uuid.uuid4())
         order_id = random.choice(order_ids)
         shipped_date = _random_timestamp(_ORDER_START, _NOW)
-        estimated_delivery = _timestamp_after(shipped_date, min_hours=72, max_hours=480)  # 3-20 days
+        estimated_delivery = _timestamp_after(
+            shipped_date, min_hours=72, max_hours=480
+        )  # 3-20 days
 
         record = {
             "shipment_id": shipment_id,
@@ -349,7 +396,7 @@ def generate_shipments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
         }
         records.append(record)
         registry.register("shipments", shipment_id)
-        registry.register_shipment(shipment_id, order_id, "pending")
+        registry.register_shipment(record)
 
     # --- CDC updates on existing shipments ---
     updatable = registry.get_updatable_shipments()
@@ -371,17 +418,14 @@ def generate_shipments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
             if new_status == "delivered":
                 actual_delivery = event_ts
 
-            record = {
-                "shipment_id": shipment_id,
-                "order_id": None,  # not changing, but included for schema consistency
-                "carrier": None,
-                "tracking_number": None,
-                "shipping_status": new_status,
-                "shipped_date": None,
-                "estimated_delivery_date": None,
-                "actual_delivery_date": actual_delivery,
-                "event_timestamp": event_ts,
-            }
+            record = registry.get_shipment(shipment_id)
+            record.update(
+                {
+                    "shipping_status": new_status,
+                    "actual_delivery_date": actual_delivery,
+                    "event_timestamp": event_ts,
+                }
+            )
             records.append(record)
             registry.update_shipment_status(shipment_id, new_status)
 
@@ -391,6 +435,7 @@ def generate_shipments(n: int, registry: IDRegistry) -> list[dict[str, Any]]:
 # ===========================================================================
 # Orchestrator
 # ===========================================================================
+
 
 def generate_all(counts: dict[str, int] | None = None) -> dict[str, list[dict[str, Any]]]:
     """

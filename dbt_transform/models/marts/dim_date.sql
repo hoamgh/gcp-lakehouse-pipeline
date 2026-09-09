@@ -1,14 +1,15 @@
 {{
     config(
         materialized='table',
-        description='Date dimension table for the Gold layer. Covers 2026-07-01 to 2030-12-31.'
+        description='Dynamic date dimension from the earliest order through five years ahead.'
     )
 }}
 
 WITH date_bounds AS (
     SELECT
-        DATE '2026-07-01'  AS min_date,
-        DATE '2030-12-31'  AS max_date
+        COALESCE(MIN(DATE(purchase_timestamp)), CURRENT_DATE()) AS min_date,
+        DATE_ADD(CURRENT_DATE(), INTERVAL 5 YEAR) AS max_date
+    FROM {{ ref('stg_orders') }}
 ),
 date_spine AS (
     SELECT date_day

@@ -1,0 +1,4 @@
+-r data_generator/requirements.txt
+-r spark_jobs/requirements.txt
+-r spark_jobs/requirements-beam.txt
+pytest>=8.0.0,<9.0.0

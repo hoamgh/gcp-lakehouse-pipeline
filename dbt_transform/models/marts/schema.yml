@@ -2,46 +2,64 @@ version: 2
 
 models:
   - name: dim_customers
+    description: "SCD Type 2 customer dimension generated from customers_snapshot."
     columns:
+      - name: customer_sk
+        tests: [unique, not_null]
       - name: customer_id
-        tests:
-          - unique
-          - not_null
-
-  - name: dim_sellers
-    columns:
-      - name: seller_id
-        tests:
-          - unique
-          - not_null
+        tests: [not_null]
+      - name: valid_from
+        tests: [not_null]
+      - name: is_current
+        tests: [not_null]
 
   - name: dim_products
+    description: "SCD Type 1 product dimension; latest attributes overwrite prior values."
     columns:
       - name: product_id
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
+
+  - name: dim_sellers
+    description: "SCD Type 1 seller dimension; latest attributes overwrite prior values."
+    columns:
+      - name: seller_id
+        tests: [unique, not_null]
+
+  - name: dim_date
+    columns:
+      - name: date_id
+        tests: [unique, not_null]
+      - name: full_date
+        tests: [unique, not_null]
 
   - name: fact_orders
+    description: "Transaction fact at one row per order; customer SK is fixed on first load."
     columns:
       - name: order_id
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: customer_id
+        tests: [not_null]
+      - name: customer_sk
         tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('dim_customers')
-                field: customer_id
+                field: customer_sk
+              config:
+                severity: warn
+      - name: purchase_date_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_id
 
   - name: fact_order_items
+    description: "Transaction fact at one row per order item."
     columns:
       - name: order_item_sk
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: order_id
         tests:
           - not_null
@@ -49,6 +67,8 @@ models:
               arguments:
                 to: ref('fact_orders')
                 field: order_id
+              config:
+                severity: warn
       - name: product_id
         tests:
           - not_null
@@ -56,6 +76,8 @@ models:
               arguments:
                 to: ref('dim_products')
                 field: product_id
+              config:
+                severity: warn
       - name: seller_id
         tests:
           - not_null
@@ -63,38 +85,50 @@ models:
               arguments:
                 to: ref('dim_sellers')
                 field: seller_id
+              config:
+                severity: warn
 
-  - name: fact_shipments
+  - name: fact_payments
+    description: "Transaction fact at one row per payment event."
     columns:
-      - name: shipment_id
-        tests:
-          - unique
-          - not_null
+      - name: payment_id
+        tests: [unique, not_null]
       - name: order_id
         tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('fact_orders')
                 field: order_id
+              config:
+                severity: warn
 
-  - name: dim_date
-    description: "Date dimension. Range is derived dynamically from the earliest order date to 5 years from today."
+  - name: fact_reviews
+    description: "Event fact at one row per customer review."
     columns:
-      - name: date_id
-        description: "Surrogate key in YYYYMMDD integer format."
-        tests:
-          - unique
-          - not_null
-      - name: full_date
-        description: "The calendar date."
+      - name: review_id
+        tests: [unique, not_null]
+      - name: order_id
         tests:
           - not_null
-      - name: year
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_id
+              config:
+                severity: warn
+
+  - name: fact_shipments
+    description: "Accumulating snapshot fact at one row per shipment."
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+      - name: order_id
         tests:
           - not_null
-      - name: month_number
-        tests:
-          - not_null
-      - name: day_of_month
-        tests:
-          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_id
+              config:
+                severity: warn

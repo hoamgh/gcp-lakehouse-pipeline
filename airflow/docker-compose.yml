@@ -1,26 +1,28 @@
-version: '3.8'
 x-airflow-common: &airflow-common
-  build: .
+  build:
+    context: ..
+    dockerfile: airflow/Dockerfile
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?Set AIRFLOW_FERNET_KEY}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     # Default GCP project and json path inside container
     GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/gcp-credentials.json
-    GCP_PROJECT_ID: hybrid-elt-lakehouse-pipeline
-    # Ép Airflow nhận thẳng Connection qua biến môi trường để không bao giờ bị lỗi kết nối
-    AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: 'google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp-credentials.json&extra__google_cloud_platform__project=hybrid-elt-lakehouse-pipeline'
+    PROJECT_ID: ${PROJECT_ID:?Set PROJECT_ID}
+    REGION: ${REGION:-asia-southeast1}
+    GCS_BUCKET: ${GCS_BUCKET:?Set GCS_BUCKET}
+    SERVICE_ACCOUNT_NAME: ${SERVICE_ACCOUNT_NAME:?Set SERVICE_ACCOUNT_NAME}
+    AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:?Set AIRFLOW_ADMIN_USERNAME}
+    AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD}
+    AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: 'google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp-credentials.json&extra__google_cloud_platform__project=${PROJECT_ID}'
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     # Mount the GCP credentials dynamically based on user setup
-    - ../data_generator/hybrid-elt-lakehouse-pipeline-2110462e33d2.json:/opt/airflow/gcp-credentials.json:ro
-    # Mount dbt model files to run inside Airflow container
-    - ../dbt_transform:/opt/airflow/dbt_transform
+    - ../data_generator/${GCP_CREDENTIALS_FILE:?Set GCP_CREDENTIALS_FILE}:/opt/airflow/gcp-credentials.json:ro
   depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
@@ -30,7 +32,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
       POSTGRES_DB: airflow
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "airflow" ]
@@ -40,7 +42,13 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com"
+    command: >-
+      bash -c "airflow db migrate &&
+      (airflow users create
+      --username $${AIRFLOW_ADMIN_USERNAME}
+      --password $${AIRFLOW_ADMIN_PASSWORD}
+      --firstname Admin --lastname User --role Admin
+      --email admin@example.com || airflow users list)"
     environment:
       <<: *airflow-common-env
     depends_on:
@@ -51,7 +59,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8081:8080"
+      - "8082:8080"
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
@@ -79,6 +87,6 @@ services:
       - ../.env
     volumes:
       # Map the credentials file dynamically
-      - ../data_generator/hybrid-elt-lakehouse-pipeline-2110462e33d2.json:/app/credentials.json:ro
+    - ../data_generator/${GCP_CREDENTIALS_FILE:?Set GCP_CREDENTIALS_FILE}:/app/credentials.json:ro
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json

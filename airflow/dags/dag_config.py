@@ -13,10 +13,10 @@ from datetime import timedelta
 # ---------------------------------------------------------------------------
 # GCP Project Settings (read from Airflow environment / docker-compose)
 # ---------------------------------------------------------------------------
-PROJECT_ID = os.environ.get("PROJECT_ID", "hybrid-elt-lakehouse-pipeline")
+PROJECT_ID = os.environ["PROJECT_ID"]
 REGION = os.environ.get("REGION", "asia-southeast1")
-GCS_BUCKET = os.environ.get("GCS_BUCKET", f"{PROJECT_ID}-lakehouse")
-SERVICE_ACCOUNT_NAME = os.environ.get("SERVICE_ACCOUNT_NAME", "elt-pipeline-sa")
+GCS_BUCKET = os.environ["GCS_BUCKET"]
+SERVICE_ACCOUNT_NAME = os.environ["SERVICE_ACCOUNT_NAME"]
 
 # Derived URIs
 SUBNET_URI = f"projects/{PROJECT_ID}/regions/{REGION}/subnetworks/default"
@@ -26,7 +26,7 @@ SCRIPTS_GCS_PREFIX = f"gs://{GCS_BUCKET}/scripts"
 # ---------------------------------------------------------------------------
 # Delta Lake / Spark versions
 # ---------------------------------------------------------------------------
-DELTA_SPARK_VERSION = "3.2.0"
+DELTA_SPARK_VERSION = "3.2.1"
 DELTA_SPARK_PACKAGE = f"io.delta:delta-spark_2.13:{DELTA_SPARK_VERSION}"
 
 SPARK_PROPERTIES = {
@@ -34,6 +34,10 @@ SPARK_PROPERTIES = {
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
     "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+    "spark.dataproc.driverEnv.PIPELINE_ENV": "gcs",
+    "spark.dataproc.driverEnv.GCS_BUCKET": GCS_BUCKET,
+    "spark.executorEnv.PIPELINE_ENV": "gcs",
+    "spark.executorEnv.GCS_BUCKET": GCS_BUCKET,
 }
 
 # ---------------------------------------------------------------------------
@@ -52,7 +56,7 @@ DEFAULT_ARGS = {
 # ---------------------------------------------------------------------------
 # Batch config builder for Dataproc Serverless
 # ---------------------------------------------------------------------------
-def get_batch_config(script_name: str, extra_args: list = None):
+def get_batch_config(script_name: str, extra_args: list | None = None):
     """
     Build a Dataproc Serverless batch config dict for the given script.
 

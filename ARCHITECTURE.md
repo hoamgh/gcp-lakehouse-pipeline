@@ -6,7 +6,7 @@
 
 - **Data Generator:** Script Python (`stream_to_pubsub.py`) dùng thư viện Faker sinh dữ liệu giả lập (customers, orders, shipments...) và đẩy liên tục lên Cloud Pub/Sub.
 - **Message Broker:** Cloud Pub/Sub (Topic: `ecommerce-events`) nhận luồng dữ liệu thô.
-- **Real-time Ingestion (Apache Beam):** Script `beam_pubsub_to_raw.py` đóng vai trò là một Dataflow Pipeline. Nó hút dữ liệu liên tục từ Pub/Sub, áp dụng khái niệm **Fixed Window (Cửa sổ 30 giây)**. Cứ mỗi 30s, nó đóng gói toàn bộ sự kiện đã nhận thành các file NDJSON lớn và xả xuống tầng Landing Zone (Staging) theo từng thực thể, giải quyết triệt để vấn đề "Small Files Problem".
+- **Real-time Ingestion (Apache Beam):** `beam_lambda_ingestion.py` là Dataflow entrypoint duy nhất. Pipeline đọc Pub/Sub một lần rồi T-branch: nhánh batch gom NDJSON theo entity xuống GCS; nhánh speed tổng hợp order/payment theo cửa sổ 30 giây và ghi Firestore idempotently.
 - **Landing Zone (Staging):** Khu vực đệm (`output/staging/`) chứa các file JSON thuần túy (Raw Data) trước khi đi vào Data Lake.
 
 ## 2. Diagram
@@ -49,7 +49,7 @@ flowchart TD
     SPARK2 -.ghi log tốc độ.-> MON3
     LOGAGG --> ALERT["Cảnh báo<br/>Slack / Discord"]
 
-    AF(("Cloud Composer<br/>Airflow")) -.trigger.-> SPARK2
+    AF(("Dockerized<br/>Airflow")) -.trigger.-> SPARK2
     AF -.trigger.-> DBT
     AF -.trigger định kỳ.-> LOGAGG
 
@@ -99,7 +99,7 @@ flowchart TD
 | GOLD           | BigQuery Gold                               | Warehouse                | BigQuery (fact/dimension tables)                        | `fact_orders`, `fact_order_items`, `fact_shipments`, `dim_customer`, `dim_product`, `dim_seller`, `dim_date` |
 | IAM            | Cloud IAM                                   | Security                 | RBAC + Row-Level Security + Data Masking + Audit Log    | RLS trên`fact_orders` theo `seller_id`, masking trường `email`                                                    |
 | BI             | Power BI                                    | Serving                  | Power BI                                                | Báo cáo phân tích trên Gold layer                                                                                     |
-| AF             | Cloud Composer (Airflow)                    | Orchestration            | Airflow DAGs                                            | Trigger SPARK2 (AvailableNow theo lịch), DBT, LOGAGG, DAG compact/vacuum ban đêm                                        |
+| AF             | Dockerized Airflow                          | Orchestration            | Airflow DAGs                                            | Trigger Dataproc AvailableNow, dbt build và Delta maintenance                                                    |
 | MON1/MON2/MON3 | Monitors                                    | Observability            | Custom log emitters                                     | Log input / QC / tốc độ xử lý ở từng tầng                                                                          |
 | LOGAGG         | Log Aggregation Job                         | Observability            | Cloud Logging                                           | Gom log từ MON1-3                                                                                                         |
 | ALERT          | Cảnh báo                                  | Observability            | Slack/Discord Webhook                                   | Nhận cảnh báo từ LOGAGG                                                                                                |
@@ -119,7 +119,7 @@ flowchart TD
 6. `AF` trigger `DBT` chạy ELT: staging (dedup bằng `ROW_NUMBER()`) → fact/dimension ở `GOLD`, bao gồm Inferred Dimension (`dim_product`) và incremental merge (`fact_shipments`, `unique_key='shipment_id'`).
 7. `GOLD` áp dụng `IAM` (RBAC, Row-Level Security theo `seller_id`, Data Masking cho `email`, Audit Log) trước khi expose ra `BI` (Power BI).
 8. Song song toàn bộ pipeline: `MON1/2/3` ghi log ở từng tầng → `LOGAGG` gom log → `ALERT` báo Slack/Discord khi có bất thường.
-9. `AF` (Cloud Composer) điều phối lịch: bật/tắt cluster Dataproc cho `SPARK2`, trigger `DBT`, trigger `LOGAGG`, và chạy DAG compact (`OPTIMIZE`) + `VACUUM` ban đêm cho Bronze/Silver.
+9. `AF` (Dockerized Airflow) trigger Dataproc Serverless, dbt build và DAG compact (`OPTIMIZE`) + `VACUUM` hàng tuần cho Bronze/Silver.
 
 ---
 
