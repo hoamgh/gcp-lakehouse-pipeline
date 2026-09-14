@@ -122,7 +122,24 @@ flowchart TD
 ### 4. Foreign Key Violations in Gold Layer (Eventual Consistency)
 
 **Problem:** dbt `relationships` tests fail because parent records (Customers) arrive after child records (Orders) in streaming scenarios.
-**Solution:** Late-arriving dimensions use inferred members. Orphan facts whose parent order is unavailable are preserved in `lakehouse_gold_quality` and excluded from conformed Gold tables. Relationship tests remain blocking and the production build currently passes without warnings.
+**Solution:** Late-arriving customers use an inferred member whose surrogate key is also used by the first real SCD2 version. When customer data arrives, the inferred member is resolved without orphaning existing orders. Facts use an event-time range join so later customer changes select the SCD2 version valid at purchase time. Orphan facts whose parent order is unavailable are preserved in `lakehouse_gold_quality` and excluded from conformed Gold tables.
+
+Existing incremental `fact_orders` rows using the former `customer_id|inferred` key are corrected by the next normal build because `customer_sk` is now an allowed merge-update column and the model re-evaluates all staged orders:
+
+```bash
+cd dbt_transform
+$env:SILVER_DATASET = 'lakehouse_silver_v2'
+dbt build --profiles-dir profiles_v2 --target v2
+```
+
+The `v2` target writes to `ANALYTICS_V2_DATASET` (default: `analytics_v2`) so
+the existing production datasets are not overwritten. Do not run a production
+full refresh for this migration. Historical Silver may only be backfilled when
+the complete Bronze Delta history has first been verified on GCS; this
+repository does not trigger that backfill.
+
+The complete isolated procedure is in
+[`docs/MODELING_V2_RUNBOOK.md`](docs/MODELING_V2_RUNBOOK.md).
 
 ### 5. Flash Sale Burst Simulation
 
@@ -138,7 +155,9 @@ The pipeline implements a **3-tier defense-in-depth** strategy where each Medall
 - **Bronze (Schema Defense):** PySpark `PERMISSIVE` mode catches structural errors (wrong types, malformed JSON). Bad records are routed to a **Dead Letter Queue** as raw JSON — never dropped — preserving the original payload + error reason for forensic replay.
 - **Silver (Semantic Defense):** `MERGE INTO` deduplicates CDC events; `NULL` imputation fills missing emails/fields with sentinel values (`unknown@placeholder.com`) rather than dropping rows, maintaining record counts.
 - **Gold (Business Logic Defense):** dbt models enforce domain rules, SCD1/SCD2 dimensions, stable fact grains, and quarantine orphan facts in `lakehouse_gold_quality`. dbt tests (`unique`, `not_null`, `relationships`) run automatically on every `dbt build`.
-- **Observability:** Custom PySpark logger emits structured metrics (record counts, error rates, processing latency) to **Cloud Logging** at each layer. Anomalous error rates (>5% per batch) trigger alerts.
+- **Observability:** Custom PySpark logger emits reconciled per-micro-batch source, valid, rejected, error-rate, and processing metrics to **Cloud Logging**. Gold reconciliation checks Silver/Gold counts, grains, duplicates, foreign keys, and payment totals using configurable warning/failure thresholds.
+- **DLQ policy:** DLQ analysis is observational. Rejected records emit warnings but do not by themselves fail the DAG; failures to read or execute the analysis remain operational task failures.
+- **Micro-batch retry safety:** Bronze uses Delta transaction identifiers (`txnAppId` per entity and `txnVersion` per epoch), while DLQ output overwrites a deterministic epoch partition. If Bronze commits but DLQ writing or logging fails, replaying that epoch neither recommits Bronze rows nor appends duplicate DLQ rows. Operators must preserve streaming checkpoints during normal operation. When intentionally resetting a checkpoint, they must also change the transaction application generation ID before processing new data, otherwise reset epoch numbers can collide with transactions already recorded by Delta. Two independent checkpoints must never use the same `txnAppId` against the same Delta table.
 - **Delta Lake Maintenance:** Weekly `OPTIMIZE` (file compaction) + `VACUUM` (7-day retention) runs via a dedicated Airflow DAG to prevent small-file degradation and manage storage costs.
 
 ---

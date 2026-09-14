@@ -4,6 +4,7 @@
         unique_key='order_id',
         incremental_strategy='merge',
         merge_update_columns=[
+            'customer_sk', 'purchase_date_id',
             'order_status', 'approved_timestamp', 'delivered_timestamp',
             'total_payment_value', 'payment_count', 'max_installments'
         ]
@@ -18,7 +19,8 @@ WITH order_payments AS (
         MAX(installments) as max_installments
     FROM {{ ref('stg_payments') }}
     GROUP BY 1
-)
+),
+customer_resolved AS (
 SELECT
     o.order_id,
     o.customer_id,
@@ -35,5 +37,12 @@ FROM {{ ref('stg_orders') }} o
 LEFT JOIN order_payments p ON o.order_id = p.order_id
 LEFT JOIN {{ ref('dim_customers') }} c
   ON o.customer_id = c.customer_id
- AND c.is_current
+ AND o.purchase_timestamp >= c.valid_from
+ AND o.purchase_timestamp < c.valid_to
 WHERE o.order_status != 'TEST_STATUS'
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY o.order_id
+    ORDER BY COALESCE(c.is_inferred, TRUE), c.valid_from DESC, c.customer_sk
+) = 1
+)
+SELECT * FROM customer_resolved

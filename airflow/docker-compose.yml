@@ -17,6 +17,10 @@ x-airflow-common: &airflow-common
     AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:?Set AIRFLOW_ADMIN_USERNAME}
     AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD}
     AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: 'google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp-credentials.json&extra__google_cloud_platform__project=${PROJECT_ID}'
+    RECON_COUNT_WARN_PCT: ${RECON_COUNT_WARN_PCT:-0.01}
+    RECON_COUNT_FAIL_PCT: ${RECON_COUNT_FAIL_PCT:-0.05}
+    RECON_VALUE_WARN_PCT: ${RECON_VALUE_WARN_PCT:-0.001}
+    RECON_VALUE_FAIL_PCT: ${RECON_VALUE_FAIL_PCT:-0.01}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs

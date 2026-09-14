@@ -7,6 +7,7 @@ of defining their own constants.
 """
 
 import os
+import re
 import uuid
 from datetime import timedelta
 
@@ -87,6 +88,15 @@ def get_batch_config(script_name: str, extra_args: list | None = None):
     return config
 
 
-def make_batch_id(prefix: str) -> str:
-    """Generate a unique batch ID for Dataproc Serverless."""
-    return f"{prefix}-{str(uuid.uuid4())[:8]}"
+def make_batch_id(prefix: str, dag_id: str, run_id: str) -> str:
+    """Build a deterministic, GCP-safe Dataproc batch ID for a DAG run."""
+    safe_prefix = re.sub(r"[^a-z0-9-]", "-", prefix.lower()).strip("-")
+    if not safe_prefix or not safe_prefix[0].isalpha():
+        safe_prefix = f"batch-{safe_prefix}"
+    run_hash = uuid.uuid5(uuid.NAMESPACE_URL, f"{dag_id}:{run_id}:{prefix}").hex[:16]
+    return f"{safe_prefix[:46].rstrip('-')}-{run_hash}"
+
+
+def batch_id_template(prefix: str) -> str:
+    """Render per-run IDs; provider 10.19 attaches to an existing ID on retry."""
+    return "{{ make_batch_id('" + prefix + "', dag.dag_id, run_id) }}"

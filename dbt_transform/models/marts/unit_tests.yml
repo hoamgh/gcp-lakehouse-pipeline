@@ -1,0 +1,61 @@
+version: 2
+
+unit_tests:
+  - name: inferred_customer_is_created_for_early_order
+    model: dim_customers
+    given:
+      - input: ref('customers_snapshot')
+        rows: []
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: order_early, customer_id: customer_late}
+    expect:
+      rows:
+        - {customer_id: customer_late, customer_name: Unknown Customer, is_current: true, is_inferred: true}
+
+  - name: first_real_customer_resolves_inferred_member
+    model: dim_customers
+    given:
+      - input: ref('customers_snapshot')
+        rows:
+          - {customer_id: customer_late, customer_name: Real Customer, email: real@example.com, phone: '1', zip_code: '10000', city: Hanoi, state: HN, dbt_valid_from: '2026-01-02 00:00:00+00', dbt_valid_to: null}
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: order_early, customer_id: customer_late}
+    expect:
+      rows:
+        - {customer_id: customer_late, customer_name: Real Customer, valid_from: '1970-01-01 00:00:00+00', is_current: true, is_inferred: false}
+
+  - name: fact_orders_uses_customer_version_at_purchase_time
+    model: fact_orders
+    given:
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: order_before_change, customer_id: customer_1, order_status: delivered, purchase_timestamp: '2026-01-02 00:00:00+00'}
+          - {order_id: order_after_change, customer_id: customer_1, order_status: delivered, purchase_timestamp: '2026-02-02 00:00:00+00'}
+      - input: ref('stg_payments')
+        rows: []
+      - input: ref('dim_customers')
+        rows:
+          - {customer_sk: 101, customer_id: customer_1, valid_from: '1970-01-01 00:00:00+00', valid_to: '2026-02-01 00:00:00+00', is_inferred: false}
+          - {customer_sk: 102, customer_id: customer_1, valid_from: '2026-02-01 00:00:00+00', valid_to: '9999-12-31 23:59:59+00', is_inferred: false}
+    expect:
+      rows:
+        - {order_id: order_before_change, customer_id: customer_1, customer_sk: 101}
+        - {order_id: order_after_change, customer_id: customer_1, customer_sk: 102}
+
+  - name: fact_orders_prefers_actual_customer_over_inferred_match
+    model: fact_orders
+    given:
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: order_1, customer_id: customer_1, order_status: delivered, purchase_timestamp: '2026-01-02 00:00:00+00'}
+      - input: ref('stg_payments')
+        rows: []
+      - input: ref('dim_customers')
+        rows:
+          - {customer_sk: 100, customer_id: customer_1, valid_from: '1970-01-01 00:00:00+00', valid_to: '9999-12-31 23:59:59+00', is_inferred: true}
+          - {customer_sk: 101, customer_id: customer_1, valid_from: '1970-01-01 00:00:00+00', valid_to: '9999-12-31 23:59:59+00', is_inferred: false}
+    expect:
+      rows:
+        - {order_id: order_1, customer_id: customer_1, customer_sk: 101}

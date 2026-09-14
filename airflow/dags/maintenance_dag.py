@@ -7,6 +7,7 @@ from dag_config import (
     GCS_BUCKET,
     PROJECT_ID,
     REGION,
+    batch_id_template,
     get_batch_config,
     make_batch_id,
 )
@@ -40,6 +41,7 @@ with DAG(
     start_date=days_ago(1),
     catchup=False,
     tags=["lakehouse", "spark", "serverless", "maintenance"],
+    user_defined_macros={"make_batch_id": make_batch_id},
 ) as dag:
     run_delta_maintenance = DataprocCreateBatchOperator(
         task_id="run_delta_maintenance",
@@ -49,5 +51,5 @@ with DAG(
             "delta_maintenance.py",
             extra_args=["--tables", ",".join(MAINTENANCE_TABLES)],
         ),
-        batch_id=make_batch_id("delta-maintenance"),
+        batch_id=batch_id_template("delta-maintenance"),
     )

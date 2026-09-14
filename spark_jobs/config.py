@@ -53,7 +53,10 @@ if _ENV == "gcs":
         raise RuntimeError("GCS_BUCKET is required when PIPELINE_ENV=gcs")
     STAGING_DIR = f"gs://{GCS_BUCKET}/staging"
     BRONZE_DIR = f"gs://{GCS_BUCKET}/bronze"
-    SILVER_DIR = f"gs://{GCS_BUCKET}/silver"
+    # Override only for isolated migrations (for example, silver_v2). The
+    # production default remains unchanged.
+    SILVER_GCS_PREFIX = os.environ.get("SILVER_GCS_PREFIX", "silver").strip("/")
+    SILVER_DIR = f"gs://{GCS_BUCKET}/{SILVER_GCS_PREFIX}"
     DLQ_DIR = f"gs://{GCS_BUCKET}/dlq"
 else:
     # Local development — relative to project root

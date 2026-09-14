@@ -1,0 +1,11 @@
+hybrid_elt_profile:
+  target: v2
+  outputs:
+    v2:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('PROJECT_ID') }}"
+      dataset: "{{ env_var('ANALYTICS_V2_DATASET', 'analytics_v2') }}"
+      location: "{{ env_var('REGION', 'asia-southeast1') }}"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      threads: 4
