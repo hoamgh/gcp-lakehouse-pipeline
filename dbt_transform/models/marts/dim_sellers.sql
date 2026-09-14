@@ -8,6 +8,7 @@
 
 WITH actual_sellers AS (
 SELECT
+    FARM_FINGERPRINT(CONCAT('seller|', seller_id)) AS seller_sk,
     seller_id,
     seller_name,
     city,
@@ -18,6 +19,7 @@ FROM {{ ref('stg_sellers') }}
 ),
 inferred_sellers AS (
 SELECT DISTINCT
+    FARM_FINGERPRINT(CONCAT('seller|', i.seller_id)) AS seller_sk,
     i.seller_id,
     'Unknown Seller' AS seller_name,
     'UNKNOWN' AS city,

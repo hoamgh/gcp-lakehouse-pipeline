@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: silver_layer
     database: "{{ env_var('PROJECT_ID') }}"
-    schema: lakehouse_silver
+    schema: "{{ env_var('SILVER_DATASET', 'lakehouse_silver') }}"
     tables:
       - name: silver_customers
       - name: silver_products

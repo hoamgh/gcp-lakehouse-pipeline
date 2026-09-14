@@ -16,12 +16,18 @@ models:
   - name: dim_products
     description: "SCD Type 1 product dimension; latest attributes overwrite prior values."
     columns:
+      - name: product_sk
+        description: "Stable deterministic analytical key derived from product_id."
+        tests: [unique, not_null]
       - name: product_id
         tests: [unique, not_null]
 
   - name: dim_sellers
     description: "SCD Type 1 seller dimension; latest attributes overwrite prior values."
     columns:
+      - name: seller_sk
+        description: "Stable deterministic analytical key derived from seller_id."
+        tests: [unique, not_null]
       - name: seller_id
         tests: [unique, not_null]
 
@@ -54,9 +60,13 @@ models:
                 field: date_id
 
   - name: fact_order_items
-    description: "Transaction fact at one row per order item."
+    description: "Transaction fact at the five-column legacy business grain; source order_item_id is nullable for historical rows."
     columns:
+      - name: order_item_id
+        description: "Nullable source business identifier; unavailable for legacy rows."
+        tests: [unique]
       - name: order_item_sk
+        description: "Stable warehouse key derived from order_id, product_id, seller_id, price, and freight_value using the production-compatible fingerprint expression."
         tests: [unique, not_null]
       - name: order_id
         tests:
@@ -76,6 +86,13 @@ models:
                 field: product_id
               config:
                 severity: warn
+      - name: product_sk
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_sk
       - name: seller_id
         tests:
           - not_null
@@ -85,6 +102,13 @@ models:
                 field: seller_id
               config:
                 severity: warn
+      - name: seller_sk
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: seller_sk
 
   - name: fact_payments
     description: "Transaction fact at one row per payment event."

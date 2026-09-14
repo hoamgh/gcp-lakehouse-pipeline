@@ -3,7 +3,7 @@ import os
 
 from config import BRONZE_DIR, DEDUP_KEYS, ENTITIES, SILVER_DIR, get_spark_session
 from delta.tables import DeltaTable
-from pyspark.sql.functions import col, lit, row_number, when
+from pyspark.sql.functions import col, concat, lit, row_number, struct, to_json, when
 from pyspark.sql.window import Window
 
 
@@ -16,15 +16,38 @@ def upsert_to_delta(microBatchOutputDF, batchId, entity, pks, silver_path):
     # 1. Deduplicate the micro-batch itself
     if entity == "shipments":
         # For CDC, keep the latest event based on event_timestamp
-        window_spec = Window.partitionBy(pks[0]).orderBy(col("event_timestamp").desc())
+        window_spec = Window.partitionBy(*pks).orderBy(
+            col("event_timestamp").desc(), col("_ingested_at").desc()
+        )
         deduped_df = (
             microBatchOutputDF.withColumn("rn", row_number().over(window_spec))
             .filter(col("rn") == 1)
             .drop("rn")
         )
     else:
-        # For append-only entities, standard dedup is fine
-        deduped_df = microBatchOutputDF.dropDuplicates(pks)
+        # Keep the most recently ingested representation of each business key.
+        if entity == "order_items":
+            legacy_grain = [
+                "order_id",
+                "product_id",
+                "seller_id",
+                "price",
+                "freight_value",
+            ]
+            dedup_key = when(
+                col("order_item_id").isNotNull(),
+                concat(lit("id|"), col("order_item_id")),
+            ).otherwise(concat(lit("legacy|"), to_json(struct(*legacy_grain))))
+            window_spec = Window.partitionBy(dedup_key).orderBy(
+                col("_ingested_at").desc()
+            )
+        else:
+            window_spec = Window.partitionBy(*pks).orderBy(col("_ingested_at").desc())
+        deduped_df = (
+            microBatchOutputDF.withColumn("rn", row_number().over(window_spec))
+            .filter(col("rn") == 1)
+            .drop("rn")
+        )
 
     # 2. Check if Silver table exists
     if DeltaTable.isDeltaTable(spark, silver_path):
@@ -53,7 +76,24 @@ def upsert_to_delta(microBatchOutputDF, batchId, entity, pks, silver_path):
             delta_table = DeltaTable.forPath(spark, silver_path)
 
         # Build merge condition
-        merge_cond = " AND ".join([f"target.{k} = source.{k}" for k in pks])
+        if entity == "order_items":
+            legacy_columns = (
+                "order_id",
+                "product_id",
+                "seller_id",
+                "price",
+                "freight_value",
+            )
+            legacy_match = " AND ".join(
+                f"target.{column} <=> source.{column}" for column in legacy_columns
+            )
+            merge_cond = (
+                "(target.order_item_id = source.order_item_id) OR "
+                "(target.order_item_id IS NULL AND source.order_item_id IS NULL "
+                f"AND {legacy_match})"
+            )
+        else:
+            merge_cond = " AND ".join([f"target.{k} = source.{k}" for k in pks])
 
         # 3. Perform MERGE
         merge = delta_table.alias("target").merge(deduped_df.alias("source"), merge_cond)
@@ -67,7 +107,14 @@ def upsert_to_delta(microBatchOutputDF, batchId, entity, pks, silver_path):
                 set=update_values,
             )
         else:
-            merge = merge.whenMatchedUpdateAll()
+            merge = merge.whenMatchedUpdateAll(
+                # Existing Silver tables receive this column as NULL during
+                # schema evolution; allow one update to seed its watermark.
+                condition=(
+                    "target._ingested_at IS NULL OR "
+                    "source._ingested_at >= target._ingested_at"
+                )
+            )
         merge.whenNotMatchedInsertAll().execute()
     else:
         # Table doesn't exist yet, write the first batch directly
@@ -100,8 +147,8 @@ def stream_bronze_to_silver():
 
         bronze_stream = spark.readStream.format("delta").load(bronze_path)
 
-        # We don't need _ingested_at from Bronze, we clean it up
-        clean_stream = bronze_stream.drop("_ingested_at", "source")
+        # Retain ingestion time for deterministic Silver deduplication and lineage.
+        clean_stream = bronze_stream.drop("source")
 
         # --- Data Quality Cleaning at Silver Layer ---
         if entity == "customers":

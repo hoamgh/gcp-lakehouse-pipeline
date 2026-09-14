@@ -32,6 +32,7 @@ dbt_transform/target/
 dbt_transform/dbt_packages/
 dbt_transform/profiles.yml
 dbt_transform/.user.yml
+dbt_transform/profiles_v2/.user.yml
 
 # Specific Credentials
 hybrid-elt-lakehouse-pipeline-2110462e33d2.json

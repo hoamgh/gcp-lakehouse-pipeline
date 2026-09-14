@@ -128,10 +128,18 @@ Existing incremental `fact_orders` rows using the former `customer_id|inferred` 
 
 ```bash
 cd dbt_transform
-dbt build --profiles-dir . --select dim_customers fact_orders
+$env:SILVER_DATASET = 'lakehouse_silver_v2'
+dbt build --profiles-dir profiles_v2 --target v2
 ```
 
-A full refresh is not required for this key migration. Use `dbt build --full-refresh --profiles-dir .` only if the target table was created by an older schema that cannot accept the merge update.
+The `v2` target writes to `ANALYTICS_V2_DATASET` (default: `analytics_v2`) so
+the existing production datasets are not overwritten. Do not run a production
+full refresh for this migration. Historical Silver may only be backfilled when
+the complete Bronze Delta history has first been verified on GCS; this
+repository does not trigger that backfill.
+
+The complete isolated procedure is in
+[`docs/MODELING_V2_RUNBOOK.md`](docs/MODELING_V2_RUNBOOK.md).
 
 ### 5. Flash Sale Burst Simulation
 

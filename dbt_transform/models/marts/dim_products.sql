@@ -9,6 +9,7 @@
 
 WITH actual_products AS (
     SELECT
+        FARM_FINGERPRINT(CONCAT('product|', product_id)) AS product_sk,
         product_id,
         category,
         product_name,
@@ -22,6 +23,7 @@ WITH actual_products AS (
 ),
 inferred_products AS (
     SELECT DISTINCT
+        FARM_FINGERPRINT(CONCAT('product|', product_id)) AS product_sk,
         product_id,
         'UNKNOWN' as category,
         'Unknown Product' as product_name,
